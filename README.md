@@ -1,5 +1,8 @@
 <h1 align='center'>anki.nvim</h1>
-Plugin that allows creation of anki notes directly from your neovim.
+
+Create anki cards directly from your neovim.
+
+![anki](https://user-images.githubusercontent.com/83038443/200166900-42f2be8c-15f3-4929-9a36-147ed8fc7720.gif)
 
 ## Requirements
 
