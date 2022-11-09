@@ -1,6 +1,3 @@
-local buffer = require("anki.buffer")
-local api = require("anki.api")
-
 ---@mod anki.configuration Configuration
 ---@brief [[
 --- See *Config*
@@ -148,6 +145,9 @@ local model_names = {}
 --- Name of the deck depends on `arg` and user's config
 ---@param arg string
 anki.anki = function(arg)
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
+
   if vim.bo.modified then
     notify_error("There are unsaved changes in the buffer")
     return
@@ -166,6 +166,9 @@ end
 ---@param arg string
 ---@param context string | table
 anki.ankiWithContext = function(arg, context)
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
+
   if vim.bo.modified then
     notify_error("There are unsaved in the buffer")
     return
@@ -189,6 +192,9 @@ end
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
+
   local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local parsed = buffer.parse(cur_buf)
   local a, b = pcall(api.guiAddCards, parsed)
@@ -205,6 +211,9 @@ end
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 anki.send = function()
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
+
   local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local parsed = buffer.parse(cur_buf)
   local a, b = pcall(api.addNote, parsed)
@@ -273,6 +282,8 @@ local function create_commands()
 end
 
 local function load()
+  local api = require("anki.api")
+
   local s0, decknames = pcall(api.deckNamesAndIds)
   if not s0 then
     error(decknames)
