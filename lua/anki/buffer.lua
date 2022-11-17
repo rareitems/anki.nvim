@@ -8,7 +8,7 @@ local buffer = {}
 ---@param latex_support boolean If true insert lines for tex support inside a buffer
 ---@return table
 buffer.create = function(fields, deckname, modelname, context, latex_support)
-  local b = {} -- gonna use buf set lines so we build a table with strings
+  local b = {}
 
   if latex_support then
     table.insert(b, [[\documentclass[11pt, a4paper]{article}]])

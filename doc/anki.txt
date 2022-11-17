@@ -14,7 +14,7 @@ Usage                                                               *anki.usage*
  Send it to anki directly using ':AnkiSend' or send it to 'Add' GUI using ':AnkiSendGui' if you want to add picture
 
 ================================================================================
-Context                                                           *anki.context*
+Context                                                           *anki.Context*
 
  Context can be used to prefill certain `field`s or `tag` during the creation of the buffer form using *anki.anki*
  This can be used to mimic the idea of sticky fields from anki's 'Add' menu but with more control.
@@ -38,7 +38,7 @@ Context                                                           *anki.context*
 <
 
 ================================================================================
-Highlights                                                     *anki.highlights*
+Highlights                                                     *anki.Highlights*
 
 There are following highlights with their default values
 >
@@ -51,7 +51,7 @@ There are following highlights with their default values
 <
 
 ================================================================================
-Tex_Support                                                   *anki.tex_support*
+TexSupport                                                     *anki.TexSupport*
 
 With this enabled files with '.anki' extension will be set to filetype `anki.tex` instead of simply `anki`
 And it also will add
@@ -67,7 +67,7 @@ To the buffer while when *anki.anki* is run
 This allows you for usage of vimtex, tex snippets etc. while creating anki cards.
 
 ================================================================================
-Clozes                                                             *anki.clozes*
+Clozes                                                             *anki.Clozes*
 
 If you are using luasnip you can use something like this to create clozes more easily.
 >
@@ -109,17 +109,19 @@ anki.ankiWithContext({arg}, {context})                    *anki.ankiWithContext*
 
     Parameters: ~
         {arg}      (string)
-        {context}  (string)  | table
+        {context}  (string|table)
 
 
 anki.sendgui()                                                    *anki.sendgui*
-     Sends the current buffer (which can be created using *anki.anki*) to the 'Add' GUI inside anki.
+     Sends the current buffer (which can be created using *anki.anki*) to the 'Add' GUI inside Anki.
+     '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
      It will select the specified inside the buffer note type and deck.
      This will always replace the content inside 'Add' and won't do any checks about it.
 
 
 anki.send()                                                          *anki.send*
-     Sends the current buffer (which can be created using *anki.anki*) directly to anki.
+     Sends the current buffer (which can be created using *anki.anki*) directly to Anki.
+     '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
      It will send it to the specified inside the buffer deck using specified note type.
      If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 

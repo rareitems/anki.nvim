@@ -13,7 +13,7 @@
 --- Send it to anki directly using ':AnkiSend' or send it to 'Add' GUI using ':AnkiSendGui' if you want to add picture
 ---@brief ]]
 
----@mod anki.context Context
+---@mod anki.Context Context
 ---@brief [[
 --- Context can be used to prefill certain `field`s or `tag` during the creation of the buffer form using *anki.anki*
 --- This can be used to mimic the idea of sticky fields from anki's 'Add' menu but with more control.
@@ -37,7 +37,7 @@
 ---<
 ---@brief ]]
 
----@mod anki.highlights Highlights
+---@mod anki.Highlights Highlights
 ---@brief [[
 ---There are following highlights with their default values
 --->
@@ -50,7 +50,7 @@
 ---<
 ---@brief ]]
 
----@mod anki.tex_support Tex_Support
+---@mod anki.TexSupport TexSupport
 ---@brief [[
 ---With this enabled files with '.anki' extension will be set to filetype `anki.tex` instead of simply `anki`
 ---And it also will add
@@ -66,7 +66,7 @@
 ---This allows you for usage of vimtex, tex snippets etc. while creating anki cards.
 ---@brief ]]
 
----@mod anki.clozes Clozes
+---@mod anki.Clozes Clozes
 ---@brief [[
 ---If you are using luasnip you can use something like this to create clozes more easily.
 --->
@@ -188,7 +188,8 @@ anki.ankiWithContext = function(arg, context)
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
 
---- Sends the current buffer (which can be created using *anki.anki*) to the 'Add' GUI inside anki.
+--- Sends the current buffer (which can be created using *anki.anki*) to the 'Add' GUI inside Anki.
+--- '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
@@ -207,7 +208,8 @@ anki.sendgui = function()
   end
 end
 
---- Sends the current buffer (which can be created using *anki.anki*) directly to anki.
+--- Sends the current buffer (which can be created using *anki.anki*) directly to Anki.
+--- '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 anki.send = function()
