@@ -1,11 +1,11 @@
 ---@mod anki.configuration Configuration
 ---@brief [[
---- See *Config*
+--- See |Config|
 ---@brief ]]
 
----@mod anki.usage Usage
+---@mod anki.Usage Usage
 ---@brief [[
---- Setup your config. See *anki.Config*
+--- Setup your config. See |anki.Config|
 --- Launch your anki
 --- Enter a filename with '.anki' extension
 --- Create a form using ':Anki <your notetype>' command
@@ -15,10 +15,10 @@
 
 ---@mod anki.Context Context
 ---@brief [[
---- Context can be used to prefill certain `field`s or `tag` during the creation of the buffer form using *anki.anki*
+--- Context can be used to prefill certain `field`s or `tag` during the creation of the buffer form using |anki.anki|
 --- This can be used to mimic the idea of sticky fields from anki's 'Add' menu but with more control.
 ---
---- Context can be set either setting global variable *vim.g.anki_context* or using *:AnkiSetContext* command.
+--- Context can be set either setting global variable |vim.g.anki_context| or using |:AnkiSetContext| command.
 --->
 --- vim.g.anki_context = { tags = "Rust ComputerScience", fields = { Context = "Rust" } }
 --- vim.g.anki_context = "nvim"
@@ -62,7 +62,7 @@
 ---   <rest of the form>
 --- \end{document}
 ---<
----To the buffer while when *anki.anki* is run
+---To the buffer while when |anki.anki| is run
 ---This allows you for usage of vimtex, tex snippets etc. while creating anki cards.
 ---@brief ]]
 
@@ -104,9 +104,9 @@ local function notify_info(content)
 end
 
 ---@class Config
----@field tex_support boolean Basic support for latex inside the 'anki' filetype. See *anki.tex_support*.
+---@field tex_support boolean Basic support for latex inside the 'anki' filetype. See |anki.TexSupport|.
 ---@field models table Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
----@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See *anki.Context*.
+---@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
 
 ---@type Config
 local Config = {
@@ -162,7 +162,7 @@ anki.anki = function(arg)
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
 
---- The same thing as *anki.anki* but it will prefill 'fields' and 'tags' specified in the context
+--- The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the context
 ---@param arg string
 ---@param context string | table
 anki.ankiWithContext = function(arg, context)
@@ -188,7 +188,7 @@ anki.ankiWithContext = function(arg, context)
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
 
---- Sends the current buffer (which can be created using *anki.anki*) to the 'Add' GUI inside Anki.
+--- Sends the current buffer (which can be created using |anki.anki|) to the 'Add' GUI inside Anki.
 --- '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
@@ -208,7 +208,7 @@ anki.sendgui = function()
   end
 end
 
---- Sends the current buffer (which can be created using *anki.anki*) directly to Anki.
+--- Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
 --- '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
@@ -335,8 +335,8 @@ local function launch()
   end
 end
 
---- Used to crate association of '.anki' extension to 'anki' filetype ('tex.anki' if *anki.tex_support* is enabled in config) and setup the user's config.
----@param user_cfg Config see *Config*
+--- Used to crate association of '.anki' extension to 'anki' filetype ('tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
+---@param user_cfg Config see |Config|
 anki.setup = function(user_cfg)
   user_cfg = user_cfg or {}
   Config = vim.tbl_deep_extend("force", Config, user_cfg)
