@@ -247,21 +247,9 @@ local function create_commands()
     anki.send()
   end, {})
 
-  vim.api.nvim_create_user_command("AnkiSetContext", function(opts)
-    vim.g.anki_context = opts.args
-    notify_info("Set context to " .. vim.inspect(opts.args))
-  end, {
-    nargs = 1,
-  })
-
   vim.api.nvim_create_user_command("AnkiShowContext", function()
     notify_info("Context is set to " .. vim.inspect(vim.g.anki_context))
   end, {})
-
-  local contexts = {}
-  for k, _ in pairs(Config.contexts) do
-    table.insert(contexts, k)
-  end
 
   vim.api.nvim_create_user_command("AnkiWithContext", function(opts)
     if vim.g.anki_context then
@@ -275,6 +263,21 @@ local function create_commands()
     nargs = 1,
     complete = function()
       return model_names
+    end,
+  })
+
+  local contexts = {}
+  for k, _ in pairs(Config.contexts) do
+    table.insert(contexts, k)
+  end
+
+  vim.api.nvim_create_user_command("AnkiSetContext", function(opts)
+    vim.g.anki_context = opts.args
+    notify_info("Set context to " .. vim.inspect(opts.args))
+  end, {
+    nargs = 1,
+    complete = function()
+      return contexts
     end,
   })
 end
