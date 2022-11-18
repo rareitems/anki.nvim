@@ -62,8 +62,8 @@
 ---   <rest of the form>
 --- \end{document}
 ---<
----To the buffer while when |anki.anki| is run
----This allows you for usage of vimtex, tex snippets etc. while creating anki cards.
+---To the buffer when |anki.anki| is run
+---This allows usage of vimtex, tex snippets etc. while creating anki cards.
 ---@brief ]]
 
 ---@mod anki.Clozes Clozes
@@ -120,7 +120,7 @@ local function get_context(arg)
     if Config.contexts and Config.contexts[arg] then
       return Config.contexts[arg]
     else
-      error("Supplied a string to context. But said context is not defined in the config or config is wronly defined")
+      error("Supplied a string '" .. arg .. "' to context. But said context is not defined in the config or config is wronly defined")
     end
   end
 
@@ -128,7 +128,7 @@ local function get_context(arg)
     return arg
   end
 
-  error("Supplied or global config is neither a 'table' or 'string'")
+  error("Supplied or global 'vim.g.context' is neither a 'table' nor 'string'")
 end
 
 --created in setup
@@ -158,9 +158,54 @@ anki.anki = function(arg)
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
 
---- The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the context
+--- Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
+--- Deck to which the card will be sent is specified by 'deckname'
+--- Fields are that of the 'notetype'
+---
+--- It will prefill 'fields' and 'tags' specified in the 'context'. See |anki.Context|
+--- If 'context' is of a type 'string' it check user's config. See |anki.Config|
+--- If 'context' is of a type 'table' it use that table directly.
+---@param deckname string Name of Anki's deck
+---@param notetype string Name of Anki' note type
+---@param context string | table | nil
+anki.ankiWithDeck = function(deckname, notetype, context)
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
+
+  if vim.bo.modified then
+    notify_error("There are unsaved changes in the buffer")
+    return
+  end
+
+  local cxt = nil
+  if context then
+    local status, res = pcall(get_context, context)
+    if status then
+      cxt = res
+    else
+      notify_error(res)
+      return
+    end
+  end
+
+  local status, fields = pcall(api.modelFieldNames, notetype)
+  if not status then
+    notify_error(fields)
+    return
+  end
+
+  local cont = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
+end
+
+--- The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the 'context'.
+--- See |anki.Context|
+---
+--- If 'context' is of a type 'string' it check user's config. See |anki.Config|
+--- If 'context' is of a type 'table' it use that table directly.
+--- If 'context' is 'nil' it use value from 'vim.g.anki_context' variable.
 ---@param arg string
----@param context string | table
+---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
   local api = require("anki.api")
   local buffer = require("anki.buffer")
@@ -185,7 +230,7 @@ anki.ankiWithContext = function(arg, context)
 end
 
 --- Sends the current buffer (which can be created using |anki.anki|) to the 'Add' GUI inside Anki.
---- '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
+--- '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
@@ -205,7 +250,7 @@ anki.sendgui = function()
 end
 
 --- Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
---- '<br>' is going to be append to the end of seperate lines to get newlines inside Anki.
+--- '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 anki.send = function()
