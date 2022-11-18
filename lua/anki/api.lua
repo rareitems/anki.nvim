@@ -8,7 +8,7 @@ local function request(res)
   if decoded.error == vim.NIL then
     return decoded.result
   else
-    error("Request returned error: " .. decoded.error)
+    error("anki.nvim: AnkiConnect Error " .. decoded.error)
   end
 end
 

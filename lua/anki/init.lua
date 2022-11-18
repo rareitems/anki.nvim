@@ -194,6 +194,24 @@ anki.ankiWithDeck = function(deckname, notetype, context)
     return
   end
 
+  local s1, decknames = pcall(api.deckNames)
+  if not s1 then
+    notify_error(decknames)
+    return
+  end
+
+  local has_found_deck = false
+  for _, v in ipairs(decknames) do
+    if v == deckname then
+      has_found_deck = true
+      break
+    end
+  end
+  if not has_found_deck then
+    notify_error("Given deck '" .. deckname .. "' does not exist in your Anki collection")
+    return
+  end
+
   local cont = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
