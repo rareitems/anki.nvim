@@ -92,15 +92,11 @@ local has_loaded = false
 local should_delete_command = false
 
 local function notify_error(content)
-  vim.notify("ANKI: " .. content, vim.log.levels.ERROR)
-end
-
-local function notify_error_once(content)
-  vim.notify_once("ANKI: " .. content, vim.log.levels.ERROR)
+  vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
 end
 
 local function notify_info(content)
-  vim.notify("ANKI: " .. content, vim.log.levels.INFO)
+  vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.INFO, {})
 end
 
 ---@class Config
@@ -293,17 +289,22 @@ local function load()
 
   local s1, models = pcall(api.modelNamesAndIds)
   if not s1 then
-    error(decknames)
+    error(models)
   end
 
   local config_models = Config.models
   for m, d in pairs(config_models) do
-    if decknames[d] and models[m] then
-      models_to_decknames[m] = d
-      table.insert(model_names, m)
-    else
-      error("Name deck '" .. d .. "' and Note type name '" .. m .. "' from your config were not found in anki")
+    if not decknames[d] then
+      -- notify_error("Deck with name '" .. d .. "' from your config was not found in Anki")
+      error("Deck with name '" .. d .. "' from your config was not found in Anki")
     end
+
+    if not models[m] then
+      -- notify_error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
+      error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
+    end
+    models_to_decknames[m] = d
+    table.insert(model_names, m)
   end
 
   vim.api.nvim_set_hl(0, "ankiHtmlItalic", { italic = true })
@@ -353,7 +354,9 @@ anki.setup = function(user_cfg)
       callback = function()
         local status, res = pcall(launch)
         if not status then
-          notify_error_once(res)
+          vim.schedule(function()
+            notify_error(res)
+          end)
         end
       end,
     })
@@ -369,7 +372,9 @@ anki.setup = function(user_cfg)
       callback = function()
         local status, res = pcall(launch)
         if not status then
-          notify_error_once(res)
+          vim.schedule(function()
+            notify_error(res)
+          end)
         end
       end,
     })
