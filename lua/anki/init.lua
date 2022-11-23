@@ -159,13 +159,13 @@ local model_names = {}
 --- Name of the deck depends on `arg` and user's config
 ---@param arg string
 anki.anki = function(arg)
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
-
-  if vim.bo.modified then
-    notify_error("There are unsaved changes in the buffer")
+  if lock:is_locked() then
+    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'")
     return
   end
+
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
 
   local status, fields = pcall(api.modelFieldNames, arg)
   if not status then
@@ -192,13 +192,13 @@ end
 ---@param notetype string Name of Anki' note type
 ---@param context string | table | nil
 anki.ankiWithDeck = function(deckname, notetype, context)
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
-
-  if vim.bo.modified then
-    notify_error("There are unsaved changes in the buffer")
+  if lock:is_locked() then
+    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'")
     return
   end
+
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
 
   local cxt = nil
   if context then
@@ -253,13 +253,13 @@ end
 ---@param arg string
 ---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
-
-  if vim.bo.modified then
-    notify_error("There are unsaved in the buffer")
+  if lock:is_locked() then
+    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'")
     return
   end
+
+  local api = require("anki.api")
+  local buffer = require("anki.buffer")
 
   local status, fields = pcall(api.modelFieldNames, arg)
   if not status then
@@ -286,8 +286,8 @@ end
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
-  if lock:is_locked() then
-    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock with ':AnkiUnlock'")
+  if vim.bo.modified then
+    notify_error("There are unsaved changes in the buffer")
     return
   end
 
@@ -312,8 +312,8 @@ end
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 anki.send = function()
-  if lock:is_locked() then
-    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock with ':AnkiUnlock'")
+  if vim.bo.modified then
+    notify_error("There are unsaved changes in the buffer")
     return
   end
 
