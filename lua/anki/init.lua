@@ -91,6 +91,22 @@ local anki = {}
 local has_loaded = false
 local should_delete_command = false
 
+---@class Lock
+---@field is_locked boolean
+local lock = { locked = false }
+
+function lock:lock()
+  self.locked = true
+end
+
+function lock:unlock()
+  self.locked = false
+end
+
+function lock:is_locked()
+  return self.locked
+end
+
 local function notify_error(content)
   vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
 end
@@ -155,6 +171,8 @@ anki.anki = function(arg)
   end
 
   local cont = buffer.create(fields, models_to_decknames[arg], arg, nil, Config.tex_support)
+  lock:lock()
+
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
 
@@ -213,6 +231,8 @@ anki.ankiWithDeck = function(deckname, notetype, context)
   end
 
   local cont = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
+  lock:lock()
+
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
 
@@ -244,6 +264,8 @@ anki.ankiWithContext = function(arg, context)
   end
 
   local cont = buffer.create(fields, models_to_decknames[arg], arg, context, Config.tex_support)
+  lock:lock()
+
   vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
 end
 
@@ -252,6 +274,11 @@ end
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
+  if lock:is_locked() then
+    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock with ':AnkiUnlock'")
+    return
+  end
+
   local api = require("anki.api")
   local buffer = require("anki.buffer")
 
@@ -261,6 +288,7 @@ anki.sendgui = function()
 
   if a then
     notify_info("Card was sent to GUI Add Card")
+    lock:unlock()
     return
   else
     notify_error(b)
@@ -272,6 +300,11 @@ end
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 anki.send = function()
+  if lock:is_locked() then
+    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock with ':AnkiUnlock'")
+    return
+  end
+
   local api = require("anki.api")
   local buffer = require("anki.buffer")
 
@@ -281,6 +314,7 @@ anki.send = function()
 
   if a then
     notify_info("Card was added")
+    lock:unlock()
     return
   else
     if string.find(b, "duplicate") then
@@ -308,6 +342,10 @@ local function create_commands()
 
   vim.api.nvim_create_user_command("AnkiSend", function()
     anki.send()
+  end, {})
+
+  vim.api.nvim_create_user_command("AnkiUnlock", function()
+    lock:unlock()
   end, {})
 
   vim.api.nvim_create_user_command("AnkiShowContext", function()
