@@ -1,32 +1,49 @@
 local buffer = {}
 
+---@class TableAnki
+---@field form table
+---@field pos_first_field 1-indexed position of the first field
+
 ---Creates a table of lines according to given inputs
 ---@param fields table Table of field names
 ---@param deckname string Name of the deck
 ---@param modelname string Name of the model (note type)
 ---@param context table | nil Table of tags and fields to prefill
 ---@param latex_support boolean If true insert lines for tex support inside a buffer
----@return table
+---@return TableAnki
 buffer.create = function(fields, deckname, modelname, context, latex_support)
   local b = {}
+
+  local pos = {
+    has_seen_first_field = false,
+    pos = 1,
+  }
 
   if latex_support then
     table.insert(b, [[\documentclass[11pt, a4paper]{article}]])
     table.insert(b, [[\usepackage{amsmath}]])
     table.insert(b, [[\usepackage{amssymb}]])
     table.insert(b, [[\begin{document}]])
+    pos.pos = pos.pos + 4
   end
 
   table.insert(b, "%%MODELNAME " .. modelname)
   table.insert(b, "%%DECKNAME " .. deckname)
+  pos.pos = pos.pos + 2
 
   if context and context.tags then
     table.insert(b, "%%TAGS" .. " " .. context.tags)
   else
     table.insert(b, "%%TAGS")
   end
+  pos.pos = pos.pos + 1
 
   for _, e in ipairs(fields) do
+    if not pos.has_seen_first_field then
+      pos.pos = pos.pos + 1
+      pos.has_seen_first_field = true
+    end
+
     local field = "%" .. e
 
     table.insert(b, field)
@@ -42,7 +59,10 @@ buffer.create = function(fields, deckname, modelname, context, latex_support)
     table.insert(b, [[\end{document}]])
   end
 
-  return b
+  return {
+    form = b,
+    pos_first_field = pos.pos,
+  }
 end
 
 ---Parses an input into a table with 'note' subtable which can be send AnkiConnect

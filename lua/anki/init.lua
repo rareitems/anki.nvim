@@ -119,12 +119,14 @@ end
 ---@field tex_support boolean Basic support for latex inside the 'anki' filetype. See |anki.TexSupport|.
 ---@field models table Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
 ---@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
+---@field move_cursor_after_creation boolean If `true` it will move the cursor the position of the first field
 
 ---@type Config
 local Config = {
   tex_support = false,
   models = {},
   contexts = {},
+  move_cursor_after_creation = true,
 }
 
 local function get_context(arg)
@@ -170,10 +172,13 @@ anki.anki = function(arg)
     error(fields)
   end
 
-  local cont = buffer.create(fields, models_to_decknames[arg], arg, nil, Config.tex_support)
+  local anki_table = buffer.create(fields, models_to_decknames[arg], arg, nil, Config.tex_support)
   lock:lock()
 
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+  if Config.move_cursor_after_creation then
+    vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
+  end
 end
 
 --- Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
@@ -230,10 +235,13 @@ anki.ankiWithDeck = function(deckname, notetype, context)
     return
   end
 
-  local cont = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
+  local anki_table = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
   lock:lock()
 
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+  if Config.move_cursor_after_creation then
+    vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
+  end
 end
 
 --- The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the 'context'.
@@ -258,15 +266,19 @@ anki.ankiWithContext = function(arg, context)
     error(fields)
   end
 
-  context = get_context(context or vim.g.anki_context)
-  if not context then
+  local cxt = get_context(context or vim.g.anki_context)
+  if not cxt then
     return
   end
 
-  local cont = buffer.create(fields, models_to_decknames[arg], arg, context, Config.tex_support)
+  local anki_table = buffer.create(fields, models_to_decknames[arg], arg, cxt, Config.tex_support)
   lock:lock()
 
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, cont)
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+
+  if Config.move_cursor_after_creation then
+    vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
+  end
 end
 
 --- Sends the current buffer (which can be created using |anki.anki|) to the 'Add' GUI inside Anki.
