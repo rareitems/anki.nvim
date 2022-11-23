@@ -91,6 +91,7 @@ local anki = {}
 local has_loaded = false
 local should_delete_command = false
 
+---@private
 ---@class Lock
 ---@field is_locked boolean
 local lock = { locked = false }
@@ -107,6 +108,8 @@ function lock:is_locked()
   return self.locked
 end
 
+local fields_of_last_note = nil
+
 local function notify_error(content)
   vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
 end
@@ -115,13 +118,13 @@ local function notify_info(content)
   vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.INFO, {})
 end
 
----@class Config
+---@class anki.Config
 ---@field tex_support boolean Basic support for latex inside the 'anki' filetype. See |anki.TexSupport|.
 ---@field models table Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
 ---@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
 ---@field move_cursor_after_creation boolean If `true` it will move the cursor the position of the first field
 
----@type Config
+---@type anki.Config
 local Config = {
   tex_support = false,
   models = {},
@@ -301,9 +304,38 @@ anki.sendgui = function()
   if a then
     notify_info("Card was sent to GUI Add Card")
     lock:unlock()
+    fields_of_last_note = parsed.note.fields
     return
   else
     notify_error(b)
+  end
+end
+
+--- Replaces the current line with the content of field whose name is nearest to the cursor
+--- from the previous sent form
+anki.fill_field_from_last_note = function()
+  local x = vim.api.nvim_win_get_cursor(0)[1] - 1
+
+  local lines = vim.api.nvim_buf_get_lines(0, x, x + 15, false)
+
+  local field
+  for _, line in ipairs(lines) do
+    if line:sub(1, 1) == "%" then
+      field = line:sub(2, #line)
+      break
+    end
+  end
+
+  if field == nil then
+    notify_error("Could not find a field name")
+    return
+  end
+
+  if fields_of_last_note[field] then
+    local replacement = vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
+    vim.api.nvim_buf_set_lines(0, x, x + 1, false, replacement)
+  else
+    notify_error("Could not find '" .. field .. "' inside the last note")
   end
 end
 
@@ -327,6 +359,7 @@ anki.send = function()
   if a then
     notify_info("Card was added")
     lock:unlock()
+    fields_of_last_note = parsed.note.fields
     return
   else
     if string.find(b, "duplicate") then

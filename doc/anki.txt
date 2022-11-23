@@ -86,12 +86,13 @@ If you are using luasnip you can use something like this to create clozes more e
  end
 <
 
-Config                                                                  *Config*
+anki.Config                                                        *anki.Config*
 
     Fields: ~
-        {tex_support}  (boolean)  Basic support for latex inside the 'anki' filetype. See |anki.TexSupport|.
-        {models}       (table)    Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
-        {contexts}     (table)    Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
+        {tex_support}                 (boolean)  Basic support for latex inside the 'anki' filetype. See |anki.TexSupport|.
+        {models}                      (table)    Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
+        {contexts}                    (table)    Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
+        {move_cursor_after_creation}  (boolean)  If `true` it will move the cursor the position of the first field
 
 
 anki.anki({arg})                                                     *anki.anki*
@@ -104,6 +105,7 @@ anki.anki({arg})                                                     *anki.anki*
         {arg}  (string)
 
 
+                                                             *anki.ankiWithDeck*
 anki.ankiWithDeck({deckname}, {notetype}, {context})
      Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
      Deck to which the card will be sent is specified by 'deckname'
@@ -137,6 +139,11 @@ anki.sendgui()                                                    *anki.sendgui*
      '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
      It will select the specified inside the buffer note type and deck.
      This will always replace the content inside 'Add' and won't do any checks about it.
+
+
+anki.fill_field_from_last_note()                *anki.fill_field_from_last_note*
+     Replaces the current line with the content of field whose name is nearest to the cursor
+     from the previous sent form
 
 
 anki.send()                                                          *anki.send*
