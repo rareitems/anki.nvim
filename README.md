@@ -20,11 +20,12 @@ use({
   "rareitems/anki.nvim",
   config = function()
     require("anki").setup({
-      -- this function will add support for associating '.anki' extension with 'anki' filetype.
+      -- this function will add support for associating '.anki' extension with both 'anki' and 'tex' filetype.
       tex_support = false,
       models = {
         -- Here you specify which notetype should be associated with which deck
-        Notetype = "Deck Path",
+        NoteType = "PathToDeck",
+        ["Basic"] = "Deck",
         ["Super Basic"] = "Deck::ChildDeck",
       },
     })
