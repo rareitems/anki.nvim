@@ -5,6 +5,7 @@ local URL = "localhost:8765"
 local function request(res)
     local decoded = vim.json.decode(res.body)
 
+    if decoded.error == vim.NIL then
         return decoded.result
     else
         error("anki.nvim: AnkiConnect Error " .. decoded.error)

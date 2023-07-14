@@ -353,7 +353,7 @@ anki.send = function(opts)
         return
     else
         if string.find(data, "duplicate") then
-            notify_error(data)
+            -- notify_error(data)
             notify_error("Card you are trying to add is a duplicate")
         else
             notify_error(data)
