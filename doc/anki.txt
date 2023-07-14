@@ -112,8 +112,8 @@ anki.ankiWithDeck({deckname}, {notetype}, {context})
      Fields are that of the 'notetype'
 
      It will prefill 'fields' and 'tags' specified in the 'context'. See |anki.Context|
-     If 'context' is of a type 'string' it check user's config. See |anki.Config|
-     If 'context' is of a type 'table' it use that table directly.
+     If 'context' is of a type 'string' it checks user's config. See |anki.Config|
+     If 'context' is of a type 'table' it uses that table directly.
 
     Parameters: ~
         {deckname}  (string)            Name of Anki's deck
@@ -125,9 +125,9 @@ anki.ankiWithContext({arg}, {context})                    *anki.ankiWithContext*
      The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the 'context'.
      See |anki.Context|
 
-     If 'context' is of a type 'string' it check user's config. See |anki.Config|
-     If 'context' is of a type 'table' it use that table directly.
-     If 'context' is 'nil' it use value from 'vim.g.anki_context' variable.
+     If 'context' is of a type 'string' it checks user's config. See |anki.Config|
+     If 'context' is of a type 'table' it uses that table directly.
+     If 'context' is 'nil' it uses value from 'vim.g.anki_context' variable.
 
     Parameters: ~
         {arg}      (string)
@@ -141,11 +141,15 @@ anki.sendgui()                                                    *anki.sendgui*
      This will always replace the content inside 'Add' and won't do any checks about it.
 
 
-anki.send()                                                          *anki.send*
+anki.send({opts})                                                    *anki.send*
      Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
      '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
      It will send it to the specified inside the buffer deck using specified note type.
      If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
+
+    Parameters: ~
+        {opts}  (table|nil)  optional configuration options:
+                               • {allow_duplicate} (boolean) If true card will be created even if it is a duplicate
 
 
 anki.fill_field_from_last_note()                *anki.fill_field_from_last_note*
@@ -154,10 +158,10 @@ anki.fill_field_from_last_note()                *anki.fill_field_from_last_note*
 
 
 anki.setup({user_cfg})                                              *anki.setup*
-     Used to crate association of '.anki' extension to 'anki' filetype ('tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
+     Used to crate association of '.anki' extension to 'anki' filetype (or 'tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
 
     Parameters: ~
-        {user_cfg}  (Config)  see |Config|
+        {user_cfg}  (anki.Config)  see |Config|
 
 
 vim:tw=78:ts=8:noet:ft=help:norl:

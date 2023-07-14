@@ -5,7 +5,6 @@ local URL = "localhost:8765"
 local function request(res)
     local decoded = vim.json.decode(res.body)
 
-    if decoded.error == vim.NIL then
         return decoded.result
     else
         error("anki.nvim: AnkiConnect Error " .. decoded.error)
@@ -113,16 +112,22 @@ API.guiAddCards = function(params)
     end
 end
 
-API.addNote = function(params)
-    params.note.options = {
-        allowDuplicate = false,
-        duplicateScope = "deck",
-        duplicateScopeOptions = {
-            deckName = nil,
-            checkChildren = false,
-            checkAllModels = false,
-        },
-    }
+API.addNote = function(params, allow_duplicate)
+    if allow_duplicate then
+        params.note.options = {
+            allowDuplicate = allow_duplicate,
+        }
+    else
+        params.note.options = {
+            allowDuplicate = allow_duplicate,
+            duplicateScope = "deck",
+            duplicateScopeOptions = {
+                deckName = vim.NIL,
+                checkChildren = false,
+                checkAllModels = false,
+            },
+        }
+    end
     local status, res = pcall(API.request, {
         action = "addNote",
         version = 6,

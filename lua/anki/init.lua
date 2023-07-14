@@ -112,7 +112,6 @@ local fields_of_last_note = nil
 local function notify_error(content)
     vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
 end
-
 local function notify_info(content)
     vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.INFO, {})
 end
@@ -142,8 +141,8 @@ local function get_context(arg)
         else
             error(
                 "Supplied a string '"
-                    .. arg
-                    .. "' to context. But said context is not defined in the config or config is wronly defined"
+                .. arg
+                .. "' to context. But said context is not defined in the config or config is incorrectly defined"
             )
         end
     end
@@ -312,15 +311,15 @@ anki.sendgui = function()
 
     local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local parsed = buffer.parse(cur_buf)
-    local a, b = pcall(api.guiAddCards, parsed)
+    local is_success, data = pcall(api.guiAddCards, parsed)
 
-    if a then
+    if is_success then
         notify_info("Card was sent to GUI Add Card")
         lock:unlock()
         fields_of_last_note = parsed.note.fields
         return
     else
-        notify_error(b)
+        notify_error(data)
     end
 end
 
@@ -328,7 +327,12 @@ end
 --- '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
-anki.send = function()
+---@param opts table|nil optional configuration options:
+---  • {allow_duplicate} (boolean) If true card will be created even if it is a duplicate
+anki.send = function(opts)
+    opts = opts or {}
+    local allow_duplicate = opts.allow_duplicate or false
+
     if vim.bo.modified then
         notify_error("There are unsaved changes in the buffer")
         return
@@ -339,18 +343,20 @@ anki.send = function()
 
     local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local parsed = buffer.parse(cur_buf)
-    local a, b = pcall(api.addNote, parsed)
 
-    if a then
+    local is_success, data = pcall(api.addNote, parsed, allow_duplicate)
+
+    if is_success then
         notify_info("Card was added")
         lock:unlock()
         fields_of_last_note = parsed.note.fields
         return
     else
-        if string.find(b, "duplicate") then
+        if string.find(data, "duplicate") then
+            notify_error(data)
             notify_error("Card you are trying to add is a duplicate")
         else
-            notify_error(b)
+            notify_error(data)
         end
     end
 end
@@ -401,6 +407,10 @@ local function create_commands()
 
     vim.api.nvim_create_user_command("AnkiSend", function()
         anki.send()
+    end, {})
+
+    vim.api.nvim_create_user_command("AnkiSendAllowDuplicate", function()
+        anki.send({ allow_duplicate = true })
     end, {})
 
     vim.api.nvim_create_user_command("AnkiUnlock", function()
@@ -466,8 +476,8 @@ local function load()
             -- notify_error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
             error(
                 "Note Type (model) name '"
-                    .. m
-                    .. "' from your config was not found in Anki"
+                .. m
+                .. "' from your config was not found in Anki"
             )
         end
         models_to_decknames[m] = d
