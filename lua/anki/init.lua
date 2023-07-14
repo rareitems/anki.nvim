@@ -97,25 +97,25 @@ local should_delete_command = false
 local lock = { locked = false }
 
 function lock:lock()
-  self.locked = true
+    self.locked = true
 end
 
 function lock:unlock()
-  self.locked = false
+    self.locked = false
 end
 
 function lock:is_locked()
-  return self.locked
+    return self.locked
 end
 
 local fields_of_last_note = nil
 
 local function notify_error(content)
-  vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
+    vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
 end
 
 local function notify_info(content)
-  vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.INFO, {})
+    vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.INFO, {})
 end
 
 ---@class anki.Config
@@ -126,30 +126,34 @@ end
 
 ---@type anki.Config
 local Config = {
-  tex_support = false,
-  models = {},
-  contexts = {},
-  move_cursor_after_creation = true,
+    tex_support = false,
+    models = {},
+    contexts = {},
+    move_cursor_after_creation = true,
 }
 
 local function get_context(arg)
-  if not arg then
-    error("Context was neither given nor is vim.g.anki_context defined")
-  end
-
-  if type(arg) == "string" then
-    if Config.contexts and Config.contexts[arg] then
-      return Config.contexts[arg]
-    else
-      error("Supplied a string '" .. arg .. "' to context. But said context is not defined in the config or config is wronly defined")
+    if not arg then
+        error("Context was neither given nor is vim.g.anki_context defined")
     end
-  end
 
-  if type(arg) == "table" then
-    return arg
-  end
+    if type(arg) == "string" then
+        if Config.contexts and Config.contexts[arg] then
+            return Config.contexts[arg]
+        else
+            error(
+                "Supplied a string '"
+                    .. arg
+                    .. "' to context. But said context is not defined in the config or config is wronly defined"
+            )
+        end
+    end
 
-  error("Supplied or global 'vim.g.context' is neither a 'table' nor 'string'")
+    if type(arg) == "table" then
+        return arg
+    end
+
+    error("Supplied or global 'vim.g.context' is neither a 'table' nor 'string'")
 end
 
 --created in setup
@@ -162,26 +166,29 @@ local model_names = {}
 --- Name of the deck depends on `arg` and user's config
 ---@param arg string
 anki.anki = function(arg)
-  if lock:is_locked() then
-    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'")
-    return
-  end
+    if lock:is_locked() then
+        notify_error(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
+        )
+        return
+    end
 
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
+    local api = require("anki.api")
+    local buffer = require("anki.buffer")
 
-  local status, fields = pcall(api.modelFieldNames, arg)
-  if not status then
-    error(fields)
-  end
+    local status, fields = pcall(api.modelFieldNames, arg)
+    if not status then
+        error(fields)
+    end
 
-  local anki_table = buffer.create(fields, models_to_decknames[arg], arg, nil, Config.tex_support)
-  lock:lock()
+    local anki_table =
+        buffer.create(fields, models_to_decknames[arg], arg, nil, Config.tex_support)
+    lock:lock()
 
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
-  if Config.move_cursor_after_creation then
-    vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
-  end
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+    if Config.move_cursor_after_creation then
+        vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
+    end
 end
 
 --- Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
@@ -195,56 +202,60 @@ end
 ---@param notetype string Name of Anki' note type
 ---@param context string | table | nil
 anki.ankiWithDeck = function(deckname, notetype, context)
-  if lock:is_locked() then
-    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'")
-    return
-  end
-
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
-
-  local cxt = nil
-  if context then
-    local status, res = pcall(get_context, context)
-    if status then
-      cxt = res
-    else
-      notify_error(res)
-      return
+    if lock:is_locked() then
+        notify_error(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
+        )
+        return
     end
-  end
 
-  local status, fields = pcall(api.modelFieldNames, notetype)
-  if not status then
-    notify_error(fields)
-    return
-  end
+    local api = require("anki.api")
+    local buffer = require("anki.buffer")
 
-  local s1, decknames = pcall(api.deckNames)
-  if not s1 then
-    notify_error(decknames)
-    return
-  end
-
-  local has_found_deck = false
-  for _, v in ipairs(decknames) do
-    if v == deckname then
-      has_found_deck = true
-      break
+    local cxt = nil
+    if context then
+        local status, res = pcall(get_context, context)
+        if status then
+            cxt = res
+        else
+            notify_error(res)
+            return
+        end
     end
-  end
-  if not has_found_deck then
-    notify_error("Given deck '" .. deckname .. "' does not exist in your Anki collection")
-    return
-  end
 
-  local anki_table = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
-  lock:lock()
+    local status, fields = pcall(api.modelFieldNames, notetype)
+    if not status then
+        notify_error(fields)
+        return
+    end
 
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
-  if Config.move_cursor_after_creation then
-    vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
-  end
+    local s1, decknames = pcall(api.deckNames)
+    if not s1 then
+        notify_error(decknames)
+        return
+    end
+
+    local has_found_deck = false
+    for _, v in ipairs(decknames) do
+        if v == deckname then
+            has_found_deck = true
+            break
+        end
+    end
+    if not has_found_deck then
+        notify_error(
+            "Given deck '" .. deckname .. "' does not exist in your Anki collection"
+        )
+        return
+    end
+
+    local anki_table = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
+    lock:lock()
+
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+    if Config.move_cursor_after_creation then
+        vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
+    end
 end
 
 --- The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the 'context'.
@@ -256,32 +267,35 @@ end
 ---@param arg string
 ---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
-  if lock:is_locked() then
-    notify_error("You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'")
-    return
-  end
+    if lock:is_locked() then
+        notify_error(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
+        )
+        return
+    end
 
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
+    local api = require("anki.api")
+    local buffer = require("anki.buffer")
 
-  local status, fields = pcall(api.modelFieldNames, arg)
-  if not status then
-    error(fields)
-  end
+    local status, fields = pcall(api.modelFieldNames, arg)
+    if not status then
+        error(fields)
+    end
 
-  local cxt = get_context(context or vim.g.anki_context)
-  if not cxt then
-    return
-  end
+    local cxt = get_context(context or vim.g.anki_context)
+    if not cxt then
+        return
+    end
 
-  local anki_table = buffer.create(fields, models_to_decknames[arg], arg, cxt, Config.tex_support)
-  lock:lock()
+    local anki_table =
+        buffer.create(fields, models_to_decknames[arg], arg, cxt, Config.tex_support)
+    lock:lock()
 
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
 
-  if Config.move_cursor_after_creation then
-    vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
-  end
+    if Config.move_cursor_after_creation then
+        vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
+    end
 end
 
 --- Sends the current buffer (which can be created using |anki.anki|) to the 'Add' GUI inside Anki.
@@ -289,54 +303,55 @@ end
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
-  if vim.bo.modified then
-    notify_error("There are unsaved changes in the buffer")
-    return
-  end
+    if vim.bo.modified then
+        notify_error("There are unsaved changes in the buffer")
+        return
+    end
 
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
+    local api = require("anki.api")
+    local buffer = require("anki.buffer")
 
-  local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-  local parsed = buffer.parse(cur_buf)
-  local a, b = pcall(api.guiAddCards, parsed)
+    local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local parsed = buffer.parse(cur_buf)
+    local a, b = pcall(api.guiAddCards, parsed)
 
-  if a then
-    notify_info("Card was sent to GUI Add Card")
-    lock:unlock()
-    fields_of_last_note = parsed.note.fields
-    return
-  else
-    notify_error(b)
-  end
+    if a then
+        notify_info("Card was sent to GUI Add Card")
+        lock:unlock()
+        fields_of_last_note = parsed.note.fields
+        return
+    else
+        notify_error(b)
+    end
 end
 
 --- Replaces the current line with the content of field whose name is nearest to the cursor
 --- from the previous sent form
 anki.fill_field_from_last_note = function()
-  local x = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local x = vim.api.nvim_win_get_cursor(0)[1] - 1
 
-  local lines = vim.api.nvim_buf_get_lines(0, x, x + 15, false)
+    local lines = vim.api.nvim_buf_get_lines(0, x, x + 15, false)
 
-  local field
-  for _, line in ipairs(lines) do
-    if line:sub(1, 1) == "%" then
-      field = line:sub(2, #line)
-      break
+    local field
+    for _, line in ipairs(lines) do
+        if line:sub(1, 1) == "%" then
+            field = line:sub(2, #line)
+            break
+        end
     end
-  end
 
-  if field == nil then
-    notify_error("Could not find a field name")
-    return
-  end
+    if field == nil then
+        notify_error("Could not find a field name")
+        return
+    end
 
-  if fields_of_last_note[field] then
-    local replacement = vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
-    vim.api.nvim_buf_set_lines(0, x, x + 1, false, replacement)
-  else
-    notify_error("Could not find '" .. field .. "' inside the last note")
-  end
+    if fields_of_last_note[field] then
+        local replacement =
+            vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
+        vim.api.nvim_buf_set_lines(0, x, x + 1, false, replacement)
+    else
+        notify_error("Could not find '" .. field .. "' inside the last note")
+    end
 end
 
 --- Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
@@ -344,190 +359,194 @@ end
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 anki.send = function()
-  if vim.bo.modified then
-    notify_error("There are unsaved changes in the buffer")
-    return
-  end
-
-  local api = require("anki.api")
-  local buffer = require("anki.buffer")
-
-  local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-  local parsed = buffer.parse(cur_buf)
-  local a, b = pcall(api.addNote, parsed)
-
-  if a then
-    notify_info("Card was added")
-    lock:unlock()
-    fields_of_last_note = parsed.note.fields
-    return
-  else
-    if string.find(b, "duplicate") then
-      notify_error("Card you are trying to add is a duplicate")
-    else
-      notify_error(b)
+    if vim.bo.modified then
+        notify_error("There are unsaved changes in the buffer")
+        return
     end
-  end
+
+    local api = require("anki.api")
+    local buffer = require("anki.buffer")
+
+    local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local parsed = buffer.parse(cur_buf)
+    local a, b = pcall(api.addNote, parsed)
+
+    if a then
+        notify_info("Card was added")
+        lock:unlock()
+        fields_of_last_note = parsed.note.fields
+        return
+    else
+        if string.find(b, "duplicate") then
+            notify_error("Card you are trying to add is a duplicate")
+        else
+            notify_error(b)
+        end
+    end
 end
 
 local function create_commands()
-  vim.api.nvim_create_user_command("Anki", function(opts)
-    local args = opts.args
-    anki.anki(args)
-  end, {
-    nargs = 1,
-    complete = function()
-      return model_names
-    end,
-  })
+    vim.api.nvim_create_user_command("Anki", function(opts)
+        local args = opts.args
+        anki.anki(args)
+    end, {
+        nargs = 1,
+        complete = function()
+            return model_names
+        end,
+    })
 
-  vim.api.nvim_create_user_command("AnkiSendGui", function()
-    anki.sendgui()
-  end, {})
+    vim.api.nvim_create_user_command("AnkiSendGui", function()
+        anki.sendgui()
+    end, {})
 
-  vim.api.nvim_create_user_command("AnkiSend", function()
-    anki.send()
-  end, {})
+    vim.api.nvim_create_user_command("AnkiSend", function()
+        anki.send()
+    end, {})
 
-  vim.api.nvim_create_user_command("AnkiUnlock", function()
-    lock:unlock()
-  end, {})
+    vim.api.nvim_create_user_command("AnkiUnlock", function()
+        lock:unlock()
+    end, {})
 
-  vim.api.nvim_create_user_command("AnkiShowContext", function()
-    notify_info("Context is set to " .. vim.inspect(vim.g.anki_context))
-  end, {})
+    vim.api.nvim_create_user_command("AnkiShowContext", function()
+        notify_info("Context is set to " .. vim.inspect(vim.g.anki_context))
+    end, {})
 
-  vim.api.nvim_create_user_command("AnkiWithContext", function(opts)
-    if vim.g.anki_context then
-      local args = opts.args
-      anki.ankiWithContext(args, vim.g.anki_context)
-    else
-      notify_error("vim.g.anki_context is not defined")
-      return
+    vim.api.nvim_create_user_command("AnkiWithContext", function(opts)
+        if vim.g.anki_context then
+            local args = opts.args
+            anki.ankiWithContext(args, vim.g.anki_context)
+        else
+            notify_error("vim.g.anki_context is not defined")
+            return
+        end
+    end, {
+        nargs = 1,
+        complete = function()
+            return model_names
+        end,
+    })
+
+    local contexts = {}
+    for k, _ in pairs(Config.contexts) do
+        table.insert(contexts, k)
     end
-  end, {
-    nargs = 1,
-    complete = function()
-      return model_names
-    end,
-  })
 
-  local contexts = {}
-  for k, _ in pairs(Config.contexts) do
-    table.insert(contexts, k)
-  end
-
-  vim.api.nvim_create_user_command("AnkiSetContext", function(opts)
-    vim.g.anki_context = opts.args
-    notify_info("Set context to " .. vim.inspect(opts.args))
-  end, {
-    nargs = 1,
-    complete = function()
-      return contexts
-    end,
-  })
+    vim.api.nvim_create_user_command("AnkiSetContext", function(opts)
+        vim.g.anki_context = opts.args
+        notify_info("Set context to " .. vim.inspect(opts.args))
+    end, {
+        nargs = 1,
+        complete = function()
+            return contexts
+        end,
+    })
 end
 
 local function load()
-  local api = require("anki.api")
+    local api = require("anki.api")
 
-  local s0, decknames = pcall(api.deckNamesAndIds)
-  if not s0 then
-    error(decknames)
-  end
-
-  local s1, models = pcall(api.modelNamesAndIds)
-  if not s1 then
-    error(models)
-  end
-
-  local config_models = Config.models
-  for m, d in pairs(config_models) do
-    if not decknames[d] then
-      -- notify_error("Deck with name '" .. d .. "' from your config was not found in Anki")
-      error("Deck with name '" .. d .. "' from your config was not found in Anki")
+    local s0, decknames = pcall(api.deckNamesAndIds)
+    if not s0 then
+        error(decknames)
     end
 
-    if not models[m] then
-      -- notify_error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
-      error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
+    local s1, models = pcall(api.modelNamesAndIds)
+    if not s1 then
+        error(models)
     end
-    models_to_decknames[m] = d
-    table.insert(model_names, m)
-  end
 
-  vim.api.nvim_set_hl(0, "ankiHtmlItalic", { italic = true })
-  vim.api.nvim_set_hl(0, "ankiHtmlBold", { bold = true })
-  vim.api.nvim_set_hl(0, "ankiDeckname", { link = "Special" })
-  vim.api.nvim_set_hl(0, "ankiModelname", { link = "Special" })
-  vim.api.nvim_set_hl(0, "ankiTags", { link = "Special" })
-  vim.api.nvim_set_hl(0, "ankiField", { link = "@namespace" })
+    local config_models = Config.models
+    for m, d in pairs(config_models) do
+        if not decknames[d] then
+            -- notify_error("Deck with name '" .. d .. "' from your config was not found in Anki")
+            error("Deck with name '" .. d .. "' from your config was not found in Anki")
+        end
+
+        if not models[m] then
+            -- notify_error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
+            error(
+                "Note Type (model) name '"
+                    .. m
+                    .. "' from your config was not found in Anki"
+            )
+        end
+        models_to_decknames[m] = d
+        table.insert(model_names, m)
+    end
+
+    vim.api.nvim_set_hl(0, "ankiHtmlItalic", { italic = true })
+    vim.api.nvim_set_hl(0, "ankiHtmlBold", { bold = true })
+    vim.api.nvim_set_hl(0, "ankiDeckname", { link = "Special" })
+    vim.api.nvim_set_hl(0, "ankiModelname", { link = "Special" })
+    vim.api.nvim_set_hl(0, "ankiTags", { link = "Special" })
+    vim.api.nvim_set_hl(0, "ankiField", { link = "@namespace" })
 end
 
 local function launch()
-  if not has_loaded then
-    local status, res = pcall(load)
-    if not status then
-      vim.api.nvim_create_user_command("Anki", function()
-        launch()
-      end, {})
-      should_delete_command = true
-      error(res .. " You can try again with :Anki")
-    end
+    if not has_loaded then
+        local status, res = pcall(load)
+        if not status then
+            vim.api.nvim_create_user_command("Anki", function()
+                launch()
+            end, {})
+            should_delete_command = true
+            error(res .. " You can try again with :Anki")
+        end
 
-    if should_delete_command then
-      vim.api.nvim_del_user_command("Anki")
-      should_delete_command = false
-    end
+        if should_delete_command then
+            vim.api.nvim_del_user_command("Anki")
+            should_delete_command = false
+        end
 
-    create_commands()
-    has_loaded = true
-  end
+        create_commands()
+        has_loaded = true
+    end
 end
 
 --- Used to crate association of '.anki' extension to 'anki' filetype ('tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
 ---@param user_cfg Config see |Config|
 anki.setup = function(user_cfg)
-  user_cfg = user_cfg or {}
-  Config = vim.tbl_deep_extend("force", Config, user_cfg)
+    user_cfg = user_cfg or {}
+    Config = vim.tbl_deep_extend("force", Config, user_cfg)
 
-  if Config.tex_support then
-    vim.filetype.add({
-      extension = {
-        anki = "tex.anki",
-      },
-    })
+    if Config.tex_support then
+        vim.filetype.add({
+            extension = {
+                anki = "tex.anki",
+            },
+        })
 
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = "tex.anki",
-      callback = function()
-        local status, res = pcall(launch)
-        if not status then
-          vim.schedule(function()
-            notify_error(res)
-          end)
-        end
-      end,
-    })
-  else
-    vim.filetype.add({
-      extension = {
-        anki = "anki",
-      },
-    })
+        vim.api.nvim_create_autocmd("FileType", {
+            pattern = "tex.anki",
+            callback = function()
+                local status, res = pcall(launch)
+                if not status then
+                    vim.schedule(function()
+                        notify_error(res)
+                    end)
+                end
+            end,
+        })
+    else
+        vim.filetype.add({
+            extension = {
+                anki = "anki",
+            },
+        })
 
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = "anki",
-      callback = function()
-        local status, res = pcall(launch)
-        if not status then
-          vim.schedule(function()
-            notify_error(res)
-          end)
-        end
-      end,
-    })
-  end
+        vim.api.nvim_create_autocmd("FileType", {
+            pattern = "anki",
+            callback = function()
+                local status, res = pcall(launch)
+                if not status then
+                    vim.schedule(function()
+                        notify_error(res)
+                    end)
+                end
+            end,
+        })
+    end
 end
 
 return anki
