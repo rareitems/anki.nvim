@@ -2,7 +2,6 @@
 ---@brief [[
 --- See |Config|
 ---@brief ]]
-
 ---@mod anki.Usage Usage
 ---@brief [[
 --- Setup your config. See |anki.Config|
@@ -196,8 +195,8 @@ end
 --- Fields are that of the 'notetype'
 ---
 --- It will prefill 'fields' and 'tags' specified in the 'context'. See |anki.Context|
---- If 'context' is of a type 'string' it check user's config. See |anki.Config|
---- If 'context' is of a type 'table' it use that table directly.
+--- If 'context' is of a type 'string' it checks user's config. See |anki.Config|
+--- If 'context' is of a type 'table' it uses that table directly.
 ---@param deckname string Name of Anki's deck
 ---@param notetype string Name of Anki' note type
 ---@param context string | table | nil
@@ -261,9 +260,9 @@ end
 --- The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the 'context'.
 --- See |anki.Context|
 ---
---- If 'context' is of a type 'string' it check user's config. See |anki.Config|
---- If 'context' is of a type 'table' it use that table directly.
---- If 'context' is 'nil' it use value from 'vim.g.anki_context' variable.
+--- If 'context' is of a type 'string' it checks user's config. See |anki.Config|
+--- If 'context' is of a type 'table' it uses that table directly.
+--- If 'context' is 'nil' it uses value from 'vim.g.anki_context' variable.
 ---@param arg string
 ---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
@@ -325,35 +324,6 @@ anki.sendgui = function()
     end
 end
 
---- Replaces the current line with the content of field whose name is nearest to the cursor
---- from the previous sent form
-anki.fill_field_from_last_note = function()
-    local x = vim.api.nvim_win_get_cursor(0)[1] - 1
-
-    local lines = vim.api.nvim_buf_get_lines(0, x, x + 15, false)
-
-    local field
-    for _, line in ipairs(lines) do
-        if line:sub(1, 1) == "%" then
-            field = line:sub(2, #line)
-            break
-        end
-    end
-
-    if field == nil then
-        notify_error("Could not find a field name")
-        return
-    end
-
-    if fields_of_last_note[field] then
-        local replacement =
-            vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
-        vim.api.nvim_buf_set_lines(0, x, x + 1, false, replacement)
-    else
-        notify_error("Could not find '" .. field .. "' inside the last note")
-    end
-end
-
 --- Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
 --- '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
 --- It will send it to the specified inside the buffer deck using specified note type.
@@ -382,6 +352,35 @@ anki.send = function()
         else
             notify_error(b)
         end
+    end
+end
+
+--- Replaces the current line with the content of field whose name is nearest to the cursor
+--- from the previous sent form
+anki.fill_field_from_last_note = function()
+    local x = vim.api.nvim_win_get_cursor(0)[1] - 1
+
+    local lines = vim.api.nvim_buf_get_lines(0, x, x + 15, false)
+
+    local field
+    for _, line in ipairs(lines) do
+        if line:sub(1, 1) == "%" then
+            field = line:sub(2, #line)
+            break
+        end
+    end
+
+    if field == nil then
+        notify_error("Could not find a field name")
+        return
+    end
+
+    if fields_of_last_note[field] then
+        local replacement =
+            vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
+        vim.api.nvim_buf_set_lines(0, x, x + 1, false, replacement)
+    else
+        notify_error("Could not find '" .. field .. "' inside the last note")
     end
 end
 
@@ -504,8 +503,8 @@ local function launch()
     end
 end
 
---- Used to crate association of '.anki' extension to 'anki' filetype ('tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
----@param user_cfg Config see |Config|
+--- Used to crate association of '.anki' extension to 'anki' filetype (or 'tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
+---@param user_cfg anki.Config see |Config|
 anki.setup = function(user_cfg)
     user_cfg = user_cfg or {}
     Config = vim.tbl_deep_extend("force", Config, user_cfg)

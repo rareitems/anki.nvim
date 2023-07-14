@@ -1,9 +1,9 @@
-================================================================================
+==============================================================================
 Configuration                                               *anki.configuration*
 
  See |Config|
 
-================================================================================
+==============================================================================
 Usage                                                               *anki.Usage*
 
  Setup your config. See |anki.Config|
@@ -13,7 +13,7 @@ Usage                                                               *anki.Usage*
  Fill it with information you want to remember.
  Send it to anki directly using ':AnkiSend' or send it to 'Add' GUI using ':AnkiSendGui' if you want to add picture
 
-================================================================================
+==============================================================================
 Context                                                           *anki.Context*
 
  Context can be used to prefill certain `field`s or `tag` during the creation of the buffer form using |anki.anki|
@@ -37,7 +37,7 @@ Context                                                           *anki.Context*
  },
 <
 
-================================================================================
+==============================================================================
 Highlights                                                     *anki.Highlights*
 
 There are following highlights with their default values
@@ -50,7 +50,7 @@ There are following highlights with their default values
  vim.api.nvim_set_hl(0, "ankiField", { link = "@namespace" })
 <
 
-================================================================================
+==============================================================================
 TexSupport                                                     *anki.TexSupport*
 
 With this enabled files with '.anki' extension will be set to filetype `anki.tex` instead of simply `anki`
@@ -66,7 +66,7 @@ And it also will add
 To the buffer when |anki.anki| is run
 This allows usage of vimtex, tex snippets etc. while creating anki cards.
 
-================================================================================
+==============================================================================
 Clozes                                                             *anki.Clozes*
 
 If you are using luasnip you can use something like this to create clozes more easily.
@@ -141,16 +141,16 @@ anki.sendgui()                                                    *anki.sendgui*
      This will always replace the content inside 'Add' and won't do any checks about it.
 
 
-anki.fill_field_from_last_note()                *anki.fill_field_from_last_note*
-     Replaces the current line with the content of field whose name is nearest to the cursor
-     from the previous sent form
-
-
 anki.send()                                                          *anki.send*
      Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
      '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
      It will send it to the specified inside the buffer deck using specified note type.
      If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
+
+
+anki.fill_field_from_last_note()                *anki.fill_field_from_last_note*
+     Replaces the current line with the content of field whose name is nearest to the cursor
+     from the previous sent form
 
 
 anki.setup({user_cfg})                                              *anki.setup*
