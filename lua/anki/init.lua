@@ -112,6 +112,7 @@ local fields_of_last_note = nil
 local function notify_error(content)
     vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
 end
+
 local function notify_info(content)
     vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.INFO, {})
 end
@@ -344,7 +345,7 @@ anki.send = function(opts)
     local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local parsed = buffer.parse(cur_buf)
 
-    local is_success, data = pcall(api.addNote, parsed, allow_duplicate)
+    local is_success, data = pcall(api.addNote, parsed, false)
 
     if is_success then
         notify_info("Card was added")
@@ -353,8 +354,19 @@ anki.send = function(opts)
         return
     else
         if string.find(data, "duplicate") then
-            -- notify_error(data)
-            notify_error("Card you are trying to add is a duplicate")
+            if allow_duplicate then
+                -- adding again because there is no API for just checking for duplicates in AnkiConnect
+                local is_success, data = pcall(api.addNote, parsed, true)
+                if is_success then
+                    notify_info("Card was added. Card you added was a duplicate.")
+                    lock:unlock()
+                    fields_of_last_note = parsed.note.fields
+                else
+                    notify_error(data)
+                end
+            else
+                notify_error("Card you are trying to add is a duplicate")
+            end
         else
             notify_error(data)
         end
