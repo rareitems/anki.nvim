@@ -109,12 +109,11 @@ end
 
 local fields_of_last_note = nil
 
-local function notify_error(content)
-    vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.ERROR, {})
-end
-
-local function notify_info(content)
-    vim.api.nvim_notify("anki.nvim: " .. content, vim.log.levels.INFO, {})
+local function notify(msg, level, opts)
+    vim.notify("anki: " .. msg, level or vim.log.levels.INFO, {
+        title = "anki.nvim",
+        icon = "󰘸",
+    })
 end
 
 ---@class anki.Config
@@ -142,8 +141,8 @@ local function get_context(arg)
         else
             error(
                 "Supplied a string '"
-                .. arg
-                .. "' to context. But said context is not defined in the config or config is incorrectly defined"
+                    .. arg
+                    .. "' to context. But said context is not defined in the config or config is incorrectly defined"
             )
         end
     end
@@ -166,8 +165,9 @@ local model_names = {}
 ---@param arg string
 anki.anki = function(arg)
     if lock:is_locked() then
-        notify_error(
-            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
+        notify(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
+            vim.log.levels.ERROR
         )
         return
     end
@@ -202,8 +202,9 @@ end
 ---@param context string | table | nil
 anki.ankiWithDeck = function(deckname, notetype, context)
     if lock:is_locked() then
-        notify_error(
-            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
+        notify(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
+            vim.log.levels.ERROR
         )
         return
     end
@@ -217,20 +218,20 @@ anki.ankiWithDeck = function(deckname, notetype, context)
         if status then
             cxt = res
         else
-            notify_error(res)
+            notify(res, vim.log.levels.ERROR)
             return
         end
     end
 
     local status, fields = pcall(api.modelFieldNames, notetype)
     if not status then
-        notify_error(fields)
+        notify(fields, vim.log.levels.ERROR)
         return
     end
 
     local s1, decknames = pcall(api.deckNames)
     if not s1 then
-        notify_error(decknames)
+        notify(decknames, vim.log.levels.ERROR)
         return
     end
 
@@ -242,8 +243,9 @@ anki.ankiWithDeck = function(deckname, notetype, context)
         end
     end
     if not has_found_deck then
-        notify_error(
-            "Given deck '" .. deckname .. "' does not exist in your Anki collection"
+        notify(
+            "Given deck '" .. deckname .. "' does not exist in your Anki collection",
+            vim.log.levels.ERROR
         )
         return
     end
@@ -267,8 +269,9 @@ end
 ---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
     if lock:is_locked() then
-        notify_error(
-            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
+        notify(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
+            vim.log.levels.ERROR
         )
         return
     end
@@ -303,7 +306,7 @@ end
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
     if vim.bo.modified then
-        notify_error("There are unsaved changes in the buffer")
+        notify("There are unsaved changes in the buffer", vim.log.levels.ERROR)
         return
     end
 
@@ -315,12 +318,12 @@ anki.sendgui = function()
     local is_success, data = pcall(api.guiAddCards, parsed)
 
     if is_success then
-        notify_info("Card was sent to GUI Add Card")
+        notify("Card was sent to GUI Add Card")
         lock:unlock()
         fields_of_last_note = parsed.note.fields
         return
     else
-        notify_error(data)
+        notify(data, vim.log.levels.ERROR)
     end
 end
 
@@ -335,7 +338,7 @@ anki.send = function(opts)
     local allow_duplicate = opts.allow_duplicate or false
 
     if vim.bo.modified then
-        notify_error("There are unsaved changes in the buffer")
+        notify("There are unsaved changes in the buffer", vim.log.levels.ERROR)
         return
     end
 
@@ -348,7 +351,7 @@ anki.send = function(opts)
     local is_success, data = pcall(api.addNote, parsed, false)
 
     if is_success then
-        notify_info("Card was added")
+        notify("Card was added")
         lock:unlock()
         fields_of_last_note = parsed.note.fields
         return
@@ -358,17 +361,17 @@ anki.send = function(opts)
                 -- adding again because there is no API for just checking for duplicates in AnkiConnect
                 local is_success, data = pcall(api.addNote, parsed, true)
                 if is_success then
-                    notify_info("Card was added. Card you added was a duplicate.")
+                    notify("Card was added. Card you added was a duplicate.")
                     lock:unlock()
                     fields_of_last_note = parsed.note.fields
                 else
-                    notify_error(data)
+                    notify(data, vim.log.levels.ERROR)
                 end
             else
-                notify_error("Card you are trying to add is a duplicate")
+                notify("Card you are trying to add is a duplicate", vim.log.levels.ERROR)
             end
         else
-            notify_error(data)
+            notify(data, vim.log.levels.ERROR)
         end
     end
 end
@@ -389,7 +392,7 @@ anki.fill_field_from_last_note = function()
     end
 
     if field == nil then
-        notify_error("Could not find a field name")
+        notify("Could not find a field name", vim.log.levels.ERROR)
         return
     end
 
@@ -398,7 +401,10 @@ anki.fill_field_from_last_note = function()
             vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
         vim.api.nvim_buf_set_lines(0, x, x + 1, false, replacement)
     else
-        notify_error("Could not find '" .. field .. "' inside the last note")
+        notify(
+            "Could not find '" .. field .. "' inside the last note",
+            vim.log.levels.ERROR
+        )
     end
 end
 
@@ -430,7 +436,7 @@ local function create_commands()
     end, {})
 
     vim.api.nvim_create_user_command("AnkiShowContext", function()
-        notify_info("Context is set to " .. vim.inspect(vim.g.anki_context))
+        notify("Context is set to " .. vim.inspect(vim.g.anki_context))
     end, {})
 
     vim.api.nvim_create_user_command("AnkiWithContext", function(opts)
@@ -438,7 +444,7 @@ local function create_commands()
             local args = opts.args
             anki.ankiWithContext(args, vim.g.anki_context)
         else
-            notify_error("vim.g.anki_context is not defined")
+            notify("vim.g.anki_context is not defined")
             return
         end
     end, {
@@ -455,7 +461,7 @@ local function create_commands()
 
     vim.api.nvim_create_user_command("AnkiSetContext", function(opts)
         vim.g.anki_context = opts.args
-        notify_info("Set context to " .. vim.inspect(opts.args))
+        notify("Set context to " .. vim.inspect(opts.args))
     end, {
         nargs = 1,
         complete = function()
@@ -488,8 +494,8 @@ local function load()
             -- notify_error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
             error(
                 "Note Type (model) name '"
-                .. m
-                .. "' from your config was not found in Anki"
+                    .. m
+                    .. "' from your config was not found in Anki"
             )
         end
         models_to_decknames[m] = d
@@ -544,7 +550,7 @@ anki.setup = function(user_cfg)
                 local status, res = pcall(launch)
                 if not status then
                     vim.schedule(function()
-                        notify_error(res)
+                        notify(res, vim.log.levels.ERROR)
                     end)
                 end
             end,
@@ -562,7 +568,7 @@ anki.setup = function(user_cfg)
                 local status, res = pcall(launch)
                 if not status then
                     vim.schedule(function()
-                        notify_error(res)
+                        notify(res, vim.log.levels.ERROR)
                     end)
                 end
             end,
