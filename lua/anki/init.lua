@@ -109,7 +109,7 @@ end
 
 local fields_of_last_note = nil
 
-local function notify(msg, level, opts)
+local function notify(msg, level)
     vim.notify("anki: " .. msg, level or vim.log.levels.INFO, {
         title = "anki.nvim",
         icon = "󰘸",
@@ -141,8 +141,8 @@ local function get_context(arg)
         else
             error(
                 "Supplied a string '"
-                    .. arg
-                    .. "' to context. But said context is not defined in the config or config is incorrectly defined"
+                .. arg
+                .. "' to context. But said context is not defined in the config or config is incorrectly defined"
             )
         end
     end
@@ -364,6 +364,7 @@ anki.send = function(opts)
                     notify("Card was added. Card you added was a duplicate.")
                     lock:unlock()
                     fields_of_last_note = parsed.note.fields
+                    return
                 else
                     notify(data, vim.log.levels.ERROR)
                 end
@@ -494,8 +495,8 @@ local function load()
             -- notify_error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
             error(
                 "Note Type (model) name '"
-                    .. m
-                    .. "' from your config was not found in Anki"
+                .. m
+                .. "' from your config was not found in Anki"
             )
         end
         models_to_decknames[m] = d
