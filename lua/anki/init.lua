@@ -306,7 +306,7 @@ anki.ankiWithContext = function(arg, context)
 end
 
 --- Sends the current buffer (which can be created using |anki.anki|) to the 'Add' GUI inside Anki.
---- '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
+--- '<br>' is going to be appended to the end of separate lines to get newlines inside Anki.
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside 'Add' and won't do any checks about it.
 anki.sendgui = function()
@@ -333,7 +333,7 @@ anki.sendgui = function()
 end
 
 --- Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
---- '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
+--- '<br>' is going to be appended to the end of separate lines to get newlines inside Anki.
 --- It will send it to the specified inside the buffer deck using specified note type.
 --- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 ---@param opts table|nil optional configuration options:
@@ -492,12 +492,10 @@ local function load()
     local config_models = Config.models
     for m, d in pairs(config_models) do
         if not decknames[d] then
-            -- notify_error("Deck with name '" .. d .. "' from your config was not found in Anki")
             error("Deck with name '" .. d .. "' from your config was not found in Anki")
         end
 
         if not models[m] then
-            -- notify_error("Note Type (model) name '" .. m .. "' from your config was not found in Anki")
             error(
                 "Note Type (model) name '"
                 .. m
@@ -584,12 +582,9 @@ end
 
 local Target = {
     png = 1,
-
     jpg = 2,
     jpeg = 3,
-
     gif = 4,
-
     not_image = 5,
 }
 
@@ -608,7 +603,7 @@ end
 
 ---Add an image from clipboard to anki's media and inserts a link to it on current cursor
 ---position
----Acepted data from clipboard can be raw png, jpg or gif data or path to an image.
+---Accepted data from clipboard can be raw png, jpg or gif data or path to an image.
 ---Requires 'xclip' and 'base64'
 anki.add_image_from_clipboard = function()
     local xclip = Config.xclip_path
@@ -683,7 +678,7 @@ anki.add_image_from_clipboard = function()
         local path = vim.fs.normalize(vim.trim(xclip_out.stdout))
 
         if vim.fn.filereadable(path) == 0 then
-            notify(path .. "is not file or not readeable", vim.log.levels.ERROR)
+            notify(path .. "is not file or not readable", vim.log.levels.ERROR)
             return
         end
 
