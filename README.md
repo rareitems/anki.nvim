@@ -10,7 +10,7 @@ Create and add anki cards directly from your neovim.
 - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 - [AnkiConnect](https://ankiweb.net/shared/info/2055492159)
 - curl
-
+- (optional) [xclip](https://github.com/astrand/xclip) and base64 for directly adding images from clipboard
 ## Installation and Setup
 
 - With [packer.nvim](https://github.com/wbthomason/packer.nvim)

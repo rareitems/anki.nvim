@@ -129,8 +129,23 @@ API.addNote = function(params, allow_duplicate)
             },
         }
     end
+
     local status, res = pcall(API.request, {
         action = "addNote",
+        version = 6,
+        params = params,
+    })
+
+    if status then
+        return res
+    else
+        error(res)
+    end
+end
+
+API.storeMediaFile = function(params)
+    local status, res = pcall(API.request, {
+        action = "storeMediaFile",
         version = 6,
         params = params,
     })

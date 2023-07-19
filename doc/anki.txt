@@ -93,6 +93,8 @@ anki.Config                                                        *anki.Config*
         {models}                      (table)    Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
         {contexts}                    (table)    Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
         {move_cursor_after_creation}  (boolean)  If `true` it will move the cursor the position of the first field
+        {xclip_path}                  (string)   Path to the 'xclip' binary
+        {base64_path}                 (string)   Path to the 'base64' binary
 
 
 anki.anki({arg})                                                     *anki.anki*
@@ -162,6 +164,13 @@ anki.setup({user_cfg})                                              *anki.setup*
 
     Parameters: ~
         {user_cfg}  (anki.Config)  see |Config|
+
+
+anki.add_image_from_clipboard()                  *anki.add_image_from_clipboard*
+    Add an image from clipboard to anki's media and inserts a link to it on current cursor
+    position
+    Acepted data from clipboard can be raw png, jpg or gif data or path to an image.
+    Requires 'xclip' and 'base64'
 
 
 vim:tw=78:ts=8:noet:ft=help:norl:

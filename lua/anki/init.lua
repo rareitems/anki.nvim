@@ -121,6 +121,8 @@ end
 ---@field models table Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
 ---@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
 ---@field move_cursor_after_creation boolean If `true` it will move the cursor the position of the first field
+---@field xclip_path string Path to the 'xclip' binary
+---@field base64_path string Path to the 'base64' binary
 
 ---@type anki.Config
 local Config = {
@@ -128,6 +130,9 @@ local Config = {
     models = {},
     contexts = {},
     move_cursor_after_creation = true,
+
+    xclip_path = "xclip",
+    base64_path = "base64",
 }
 
 local function get_context(arg)
@@ -574,6 +579,199 @@ anki.setup = function(user_cfg)
                 end
             end,
         })
+    end
+end
+
+local Target = {
+    png = 1,
+
+    jpg = 2,
+    jpeg = 3,
+
+    gif = 4,
+
+    not_image = 5,
+}
+
+Target.is_image = function(target)
+    if target == Target.png then
+        return "png"
+    elseif target == Target.jpeg then
+        return "jpeg"
+    elseif target == Target.jpg then
+        return "jpg"
+    elseif target == Target.gif then
+        return "gif"
+    end
+    return nil
+end
+
+---Add an image from clipboard to anki's media and inserts a link to it on current cursor
+---position
+---Acepted data from clipboard can be raw png, jpg or gif data or path to an image.
+---Requires 'xclip' and 'base64'
+anki.add_image_from_clipboard = function()
+    local xclip = Config.xclip_path
+    local base64 = Config.base64_path
+
+    if vim.fn.executable(xclip) == 0 then
+        notify("xclip not found", vim.log.levels.ERROR)
+        return
+    end
+
+    if vim.fn.executable(base64) == 0 then
+        notify("base64 not found", vim.log.levels.ERROR)
+        return
+    end
+
+    local targets = vim.system(
+        { xclip, "-o", "-t", "TARGETS", "-selection", "clipboard" },
+        { text = true }
+    ):wait()
+
+    if targets.code ~= 0 then
+        notify("Error from xclip", vim.log.levels.ERROR)
+        notify(targets.stderr, vim.log.levels.ERROR)
+        return
+    end
+
+    local targets_split = vim.split(targets.stdout, "\n")
+
+    local target = nil
+    for _, v in ipairs(targets_split) do
+        if v == "STRING" then
+            target = Target.not_image
+            break
+        end
+
+        if v == "image/png" then
+            target = Target.png
+            break
+        end
+
+        if v == "image/jpeg" then
+            target = Target.jpeg
+            break
+        end
+
+        if v == "image/jpg" then
+            target = Target.jpg
+            break
+        end
+
+        if v == "image/gif" then
+            target = Target.gif
+            break
+        end
+    end
+    assert(target)
+
+    if target == Target.not_image then
+        local xclip_out = vim.system({
+            xclip,
+            "-o",
+            "-selection",
+            "clipboard",
+        }, { text = true }):wait()
+
+        if xclip_out.code ~= 0 then
+            notify("Error from xclip", vim.log.levels.ERROR)
+            notify(xclip_out.stderr, vim.log.levels.ERROR)
+            return
+        end
+
+        local path = vim.fs.normalize(vim.trim(xclip_out.stdout))
+
+        if vim.fn.filereadable(path) == 0 then
+            notify(path .. "is not file or not readeable", vim.log.levels.ERROR)
+            return
+        end
+
+        local filename = vim.fs.basename(path)
+        if not filename then
+            notify("Could not extract basename from path: " .. path, vim.log.levels.ERROR)
+            return
+        end
+
+        local ft = filename:match(".(%a+)$")
+        if not ft then
+            notify(
+                "Could not extract filetype from filename: " .. filename,
+                vim.log.levels.ERROR
+            )
+            return
+        end
+
+        local status, data = pcall(require("anki.api").storeMediaFile, {
+            filename = filename,
+            path = path,
+            deleteExisting = false,
+        })
+
+        if status then
+            local index = vim.api.nvim_win_get_cursor(0)
+            vim.api.nvim_buf_set_text(
+                0,
+                index[1] - 1,
+                index[2],
+                index[1] - 1,
+                index[2],
+                { string.format([[<img src=%s>]], data) }
+            )
+            notify("Added image from " .. path)
+            return
+        else
+            notify(data, vim.log.levels.ERROR)
+            return
+        end
+    elseif Target.is_image(target) then
+        local ft = Target.is_image(target)
+
+        local xclip_out = vim.system({
+            xclip,
+            "-o",
+            "-t",
+            "image/" .. ft,
+            "-selection",
+            "clipboard",
+        }):wait()
+
+        if xclip_out.code ~= 0 then
+            notify("Error from xclip", vim.log.levels.ERROR)
+            notify(xclip_out.stderr, vim.log.levels.ERROR)
+            return
+        end
+
+        local base64_out = vim.system({ base64 }, { stdin = xclip_out.stdout }):wait()
+
+        if base64_out.code ~= 0 then
+            notify("Error from base64", vim.log.levels.ERROR)
+            notify(base64_out.stderr, vim.log.levels.ERROR)
+            return
+        end
+
+        local status, data = pcall(require("anki.api").storeMediaFile, {
+            filename = "from_neovim." .. ft,
+            data = base64_out.stdout,
+            deleteExisting = false,
+        })
+
+        if status then
+            local index = vim.api.nvim_win_get_cursor(0)
+            vim.api.nvim_buf_set_text(
+                0,
+                index[1] - 1,
+                index[2],
+                index[1] - 1,
+                index[2],
+                { string.format([[<img src=%s>]], data) }
+            )
+            notify("Added image from clipboard")
+            return
+        else
+            notify(data, vim.log.levels.ERROR)
+            return
+        end
     end
 end
 
