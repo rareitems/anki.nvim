@@ -601,10 +601,10 @@ Target.is_image = function(target)
     return nil
 end
 
----Add an image from clipboard to anki's media and inserts a link to it on current cursor
----position
----Accepted data from clipboard can be raw png, jpg or gif data or path to an image.
----Requires 'xclip' and 'base64'
+--- Add an image from clipboard to anki's media and inserts a link to it on current cursor position
+--- Accepted data from clipboard can be raw png, jpg or gif data or path to an image.
+--- If data is from the clipboard is too big a temporary file (via 'vim.fn.tempname') in 'tempdir' will created.
+--- Requires 'xclip' and 'base64'
 anki.add_image_from_clipboard = function()
     local xclip = Config.xclip_path
     local base64 = Config.base64_path
@@ -631,7 +631,6 @@ anki.add_image_from_clipboard = function()
     end
 
     local targets_split = vim.split(targets.stdout, "\n")
-
     local target = nil
     for _, v in ipairs(targets_split) do
         if v == "STRING" then
@@ -737,19 +736,33 @@ anki.add_image_from_clipboard = function()
             return
         end
 
-        local base64_out = vim.system({ base64 }, { stdin = xclip_out.stdout }):wait()
-
-        if base64_out.code ~= 0 then
-            notify("Error from base64", vim.log.levels.ERROR)
-            notify(base64_out.stderr, vim.log.levels.ERROR)
-            return
+        local status, data
+        -- curl doesn't like getting big arguments
+        if #xclip_out.stdout > 10000 then
+            local tempfile = vim.fn.tempname()
+            if vim.fn.writefile(xclip_out.stdout, tempfile) ~= 0 then
+                notify("Could not write to tempfile", vim.log.levels.ERROR)
+                return
+            end
+            status, data = pcall(require("anki.api").storeMediaFile, {
+                filename = "from_neovim." .. ft,
+                path = tempfile,
+                deleteExisting = false,
+            })
+            -- assuming tmpfile will be cleared by OS so we don't have to it
+        else
+            local base64_out = vim.system({ base64 }, { stdin = xclip_out.stdout }):wait()
+            if base64_out.code ~= 0 then
+                notify("Error from base64", vim.log.levels.ERROR)
+                notify(base64_out.stderr, vim.log.levels.ERROR)
+                return
+            end
+            status, data = pcall(require("anki.api").storeMediaFile, {
+                filename = "from_neovim." .. ft,
+                data = base64_out.stdout,
+                deleteExisting = false,
+            })
         end
-
-        local status, data = pcall(require("anki.api").storeMediaFile, {
-            filename = "from_neovim." .. ft,
-            data = base64_out.stdout,
-            deleteExisting = false,
-        })
 
         if status then
             local index = vim.api.nvim_win_get_cursor(0)

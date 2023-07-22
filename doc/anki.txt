@@ -138,14 +138,14 @@ anki.ankiWithContext({arg}, {context})                    *anki.ankiWithContext*
 
 anki.sendgui()                                                    *anki.sendgui*
      Sends the current buffer (which can be created using |anki.anki|) to the 'Add' GUI inside Anki.
-     '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
+     '<br>' is going to be appended to the end of separate lines to get newlines inside Anki.
      It will select the specified inside the buffer note type and deck.
      This will always replace the content inside 'Add' and won't do any checks about it.
 
 
 anki.send({opts})                                                    *anki.send*
      Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
-     '<br>' is going to be appended to the end of seperate lines to get newlines inside Anki.
+     '<br>' is going to be appended to the end of separate lines to get newlines inside Anki.
      It will send it to the specified inside the buffer deck using specified note type.
      If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
 
@@ -167,10 +167,10 @@ anki.setup({user_cfg})                                              *anki.setup*
 
 
 anki.add_image_from_clipboard()                  *anki.add_image_from_clipboard*
-    Add an image from clipboard to anki's media and inserts a link to it on current cursor
-    position
-    Acepted data from clipboard can be raw png, jpg or gif data or path to an image.
-    Requires 'xclip' and 'base64'
+     Add an image from clipboard to anki's media and inserts a link to it on current cursor position
+     Accepted data from clipboard can be raw png, jpg or gif data or path to an image.
+     If data is from the clipboard is too big a temporary file (via 'vim.fn.tempname') in 'tempdir' will created.
+     Requires 'xclip' and 'base64'
 
 
 vim:tw=78:ts=8:noet:ft=help:norl:
