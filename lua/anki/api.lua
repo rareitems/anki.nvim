@@ -2,16 +2,6 @@ local curl = require("plenary.curl")
 
 local URL = "localhost:8765"
 
-local function request(res)
-    local decoded = vim.json.decode(res.body)
-
-    if decoded.error == vim.NIL then
-        return decoded.result
-    else
-        error("anki.nvim: AnkiConnect Error " .. decoded.error)
-    end
-end
-
 ---API for AnkiConnect
 ---See 'https://foosoft.net/projects/anki-connect/' for more information
 ---@class API
@@ -25,7 +15,12 @@ API.request = function(body)
     })
 
     if status then
-        return request(res)
+        local decoded = vim.json.decode(res.body)
+        if decoded.error == vim.NIL then
+            return decoded.result
+        else
+            error("anki.nvim: AnkiConnect Error " .. decoded.error)
+        end
     else
         error(res)
     end

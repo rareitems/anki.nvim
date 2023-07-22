@@ -64,7 +64,7 @@ describe("parsing tests", function()
         assert.are.same("Field0 information", t.fields.Field0)
     end)
 
-    it("field0", function()
+    it("field1", function()
         local t = require("anki.buffer").parse(data).note
         assert.are.same(
             [[Field1<br>
@@ -77,9 +77,8 @@ Field1]],
         )
     end)
 
-    it("field0", function()
+    it("field2", function()
         local t = require("anki.buffer").parse(data).note
-        print("t: " .. vim.inspect(t))
         assert.are.same(t.fields["Field2"], "")
     end)
 end)
