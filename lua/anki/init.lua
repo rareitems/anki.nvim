@@ -146,8 +146,8 @@ local function get_context(arg)
         else
             error(
                 "Supplied a string '"
-                .. arg
-                .. "' to context. But said context is not defined in the config or config is incorrectly defined"
+                    .. arg
+                    .. "' to context. But said context is not defined in the config or config is incorrectly defined"
             )
         end
     end
@@ -498,8 +498,8 @@ local function load()
         if not models[m] then
             error(
                 "Note Type (model) name '"
-                .. m
-                .. "' from your config was not found in Anki"
+                    .. m
+                    .. "' from your config was not found in Anki"
             )
         end
         models_to_decknames[m] = d
@@ -782,5 +782,10 @@ anki.add_image_from_clipboard = function()
         end
     end
 end
+
+---Returns 'true' after buffer was made but has not been yet sent, false otherwise.
+---Can be used in thing like lualine as an a visual indicator whatever or card has been sent to anki.
+---@return boolean
+anki.is_locked = function() return lock:is_locked() end
 
 return anki
