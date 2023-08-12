@@ -12,6 +12,7 @@ local API = {}
 API.request = function(body)
     local status, res = pcall(curl.get, URL, {
         body = vim.json.encode(body),
+        timeout = 1000,
     })
 
     if status then
@@ -95,17 +96,14 @@ API.modelFieldNames = function(name)
 end
 
 API.guiAddCards = function(params)
-    local status, res = pcall(API.request, {
+    -- vim.print([[[lua/anki/api.lua:97] params: ]] .. vim.inspect(params))
+    -- local status, res = pcall(API.request, )
+
+    return API.request({
         action = "guiAddCards",
         version = 6,
         params = params,
     })
-
-    if status then
-        return res
-    else
-        error(res)
-    end
 end
 
 API.addNote = function(params, allow_duplicate)

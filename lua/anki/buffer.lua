@@ -66,6 +66,7 @@ buffer.create = function(fields, deckname, modelname, context, latex_support)
 end
 
 ---Parses an input into a table with 'note' subtable which can be send AnkiConnect
+---@return Form, table?
 buffer.parse = function(input)
     local result = { fields = {} }
 
@@ -76,9 +77,9 @@ buffer.parse = function(input)
         lines = input
     end
 
-    local is_inside_field = { is = false, name = "", content = {} }
+    local is_inside_field = { is = false, name = "", content = {}, line_number = -1 }
 
-    for _, line in ipairs(lines) do
+    for line_counter, line in ipairs(lines) do
         if line:sub(1, 2) == [[%%]] then
             local line_by_space = vim.split(line, " ", {})
 
@@ -103,10 +104,10 @@ buffer.parse = function(input)
 
         if line:sub(1, 1) == [[%]] then
             if is_inside_field.is then
-                local content = table.concat(is_inside_field.content, "<br>\n")
-
                 if result.fields[is_inside_field.name] == nil then
-                    result.fields[is_inside_field.name] = content
+                    result.fields[is_inside_field.name] = is_inside_field.content
+                    result.fields[is_inside_field.name].line_number = is_inside_field.line_number
+                        - 1
                 else
                     vim.notify(
                         "Field with name '"
@@ -117,8 +118,14 @@ buffer.parse = function(input)
 
                 is_inside_field.is = false
             else
-                is_inside_field = { is = true, name = line:sub(2, -1), content = {} }
+                is_inside_field = {
+                    is = true,
+                    name = line:sub(2, -1),
+                    content = {},
+                    line_number = line_counter,
+                }
             end
+
             goto continue
         end
 
@@ -129,9 +136,37 @@ buffer.parse = function(input)
         ::continue::
     end
 
-    return {
-        note = result,
-    }
+    return result
+end
+
+buffer.concat_lines = function(lines)
+    return table.concat(lines, "<br>\n")
+end
+
+buffer.transform = function(form, transformers)
+    local t = require("anki.transformers")
+
+    -- stylua: ignore
+    local result = t.try_to_tranform_with(form, transformers)
+    -- stylua: ignore
+    result = t.try_to_tranform_with(result, require("anki.helpers").global_variable("transformers"))
+    -- stylua: ignore
+    result = t.try_to_tranform_with(result, require("anki.helpers").buffer_variable("transformers"))
+
+    return result
+end
+
+buffer.all = function(cur_buf, transformers)
+    local form = buffer.parse(cur_buf)
+    form = buffer.transform(form, transformers)
+
+    -- TODO: add tagger
+
+    for k, v in pairs(form.fields) do
+        form.fields[k] = buffer.concat_lines(v)
+    end
+
+    return { note = form }
 end
 
 return buffer

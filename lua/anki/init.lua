@@ -1,30 +1,129 @@
----@mod anki.configuration Configuration
+---@mod anki.introduction Introduction
 ---@brief [[
---- See |Config|
----@brief ]]
----@mod anki.Usage Usage
----@brief [[
---- Setup your config. See |anki.Config|
---- Launch your anki
---- Enter a filename with '.anki' extension
---- Create a form using ':Anki <your notetype>' command
---- Fill it with information you want to remember.
---- Send it to anki directly using ':AnkiSend' or send it to 'Add' GUI using ':AnkiSendGui' if you want to add picture
+---This plugin allows to create (and edit in future) Anki card from from Neovim
 ---@brief ]]
 
----@mod anki.Context Context
+---@mod anki.configuration Configuration
+---@brief [[
+--- See |anki.config|
+---@brief ]]
+
+---@mod anki.usage Usage
+---@brief [[
+--- Setup your config. See |anki.config|
+--- Launch your anki
+--- Enter a filename with `.anki` extension
+--- Create a form using `:Anki <your notetype>` command
+--- Fill it with information you want to remember.
+--- Send it to anki directly using `:AnkiSend` or send it to `Add` GUI using `:AnkiSendGui` if you want to add picture
+---@brief ]]
+
+---@mod anki.linters Linters
+---@brief [[
+---Allows of "statically" checking cards before you sending them to Anki.
+---See |anki.Linter|
+---
+---You can define a bunch of function which given fields from the buffer can report various errors (spellchecking, too long lines, etc.) which will show up in `nvim` diagnostics.
+---Kind of like "LSP" for your Anki cards.
+---
+---Can be set in either the configuration |anki.config| or in buffer (`vim.b.anki.linters`) or global (`vim.b.anki.linters`) variables
+---
+---Example:
+---Show errors if any of the lines or fields are too long
+--->lua
+--- {
+---        linter = function(fields, form)
+---            local ret = {}
+---            for field, lines in pairs(fields) do
+---                local counter = 0
+---                for ln, line in ipairs(lines) do
+---                    if #line >= line_size then
+---                        table.insert(ret, {
+---                            message = "this line is too long " .. #line,
+---                            lnum = lines.line_number + ln,
+---                            col = 0,
+---                        })
+---                    end
+---                    counter = counter + #line
+---                end
+---                if counter >= field_size then
+---                    table.insert(ret, {
+---                        message = "this field has way too much characters" .. counter,
+---                        lnum = lines.line_number,
+---                        col = 0,
+---                    })
+---                end
+---            end
+---            return ret
+---        end,
+---        name = "size",
+--- }
+---<
+---@brief ]]
+
+---Linter type
+---@class Linter
+---@field condition (fun(form : Form) : boolean) | nil If `condition` is a function and it returs `true` run this linter, if `false` do not run it. If `condition` is assigned to `nil` run it always
+---@field linter fun(fields : table<string, string[]>, form : Form) : table Function that returns table of diagnostics (with structure that of |diagnostic-structure|(see `:h diagnostic-structure`) for the given fields. Each field is a table from name of that field to array of strings (content inside that field) it also has `line_number` field which indicates the line at which the field at starts (it lets you set `lnum` inside the returned diagnostic table, `line_number + 1` would indicate the first line in that field etc.)
+---@field name string Name for error purposes
+
+---Form type
+---@class Form
+---@field modelName string Name of the note (model)
+---@field deckName string Name of the deck
+---@field tags string[] Table of tags
+---@field fields table Table of name of a Field to array of strings of content inside that field
+
+---@mod anki.transformers Transformers
+---@brief [[
+---Allows of programatically transforming your cards before sending them to Anki.
+---See |anki.Transformer|
+---
+---You can define a bunch of function which given fields from the buffer can transform fields
+---of your cards (correct misspells, capitlize certain fields etc.).
+---
+---Can be set in either the configuration |anki.config| or in buffer (`vim.b.anki.transformers`) or global (`vim.b.anki.transformers`) variables
+---
+---Example:
+---Runs `titlecase`(https://github.com/wezm/titlecase) binary on specific content from
+---a specific field, which automitacally capitlizes the content inside that field.
+---
+--->lua
+--- {
+---    condition = function(note)
+---        return note.modelName == "Definition"
+---    end,
+---
+---    transformation = function(fields)
+---        local stdout = vim.system({ "titlecase" }, { stdin = fields["Concept"] }):wait().stdout or ""
+---        fields["Concept"] = vim.split(stdout:sub(1, #stdout - 1), "\n")
+---        return fields
+---    end,
+---
+---    name = "uppercase-Concept-Field",
+--- },
+---<
+---@brief ]]
+
+---Transformer type
+---@class Transformer
+---@field condition (fun(form : Form) : boolean) | nil If `condition` is a function and it returs `true` run this linter, if `false` do not run it. If `condition` is assigned to `nil` run it always
+---@field transformation fun(fields : table<string, string[]>, form : Form) : table<string, string[]> Function which does the transformation on the fields and then returns it
+---@field name string Name for error reporting purposes
+
+---@mod anki.context Context
 ---@brief [[
 --- Context can be used to prefill certain `field`s or `tag` during the creation of the buffer form using |anki.anki|
 --- This can be used to mimic the idea of sticky fields from anki's 'Add' menu but with more control.
 ---
 --- Context can be set either setting global variable |vim.g.anki_context| or using |:AnkiSetContext| command.
---->
+--->lua
 --- vim.g.anki_context = { tags = "Rust ComputerScience", fields = { Context = "Rust" } }
 --- vim.g.anki_context = "nvim"
 ---<
 --- If context is a `string` your config's `contexts` subtable will be checked for corresponding value.
 --- Contexts can be specified in your config like so
---->
+--->lua
 --- contexts = {
 ---   nvim = {
 ---     tags = "shortcuts::nvim nvim",
@@ -36,10 +135,10 @@
 ---<
 ---@brief ]]
 
----@mod anki.Highlights Highlights
+---@mod anki.highlights Highlights
 ---@brief [[
 ---There are following highlights with their default values
---->
+--->lua
 --- vim.api.nvim_set_hl(0, "ankiHtmlItalic", { italic = true })
 --- vim.api.nvim_set_hl(0, "ankiHtmlBold", { bold = true })
 --- vim.api.nvim_set_hl(0, "ankiDeckname", { link = "Special" })
@@ -49,11 +148,11 @@
 ---<
 ---@brief ]]
 
----@mod anki.TexSupport TexSupport
+---@mod anki.texSupport TexSupport
 ---@brief [[
----With this enabled files with '.anki' extension will be set to filetype `anki.tex` instead of simply `anki`
+---With this enabled files with `.anki` extension will be set to filetype `anki.tex` instead of simply `anki`
 ---And it also will add
---->
+--->lua
 --- \documentclass[11pt, a4paper]{article}
 --- \usepackage{amsmath}
 --- \usepackage{amssymb}
@@ -65,10 +164,10 @@
 ---This allows usage of vimtex, tex snippets etc. while creating anki cards.
 ---@brief ]]
 
----@mod anki.Clozes Clozes
+---@mod anki.clozes Clozes
 ---@brief [[
 ---If you are using luasnip you can use something like this to create clozes more easily.
---->
+--->lua
 --- local function cloze_same_line(_, _, _, _)
 ---   local a = vim.g.anki_cloze or 1
 ---   local t0 = t({ "{{c" .. a .. "::#" })
@@ -111,20 +210,25 @@ local function notify(msg, level)
     })
 end
 
----@class anki.Config
----@field tex_support boolean Basic support for latex inside the 'anki' filetype. See |anki.TexSupport|.
----@field models table Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
----@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.Context|.
+---@class anki.config
+---@field tex_support boolean Basic support for latex inside the `anki` filetype. See |anki.texSupport|.
+---@field models table<string, string> Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
+---@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.context|.
 ---@field move_cursor_after_creation boolean If `true` it will move the cursor the position of the first field
----@field xclip_path string Path to the 'xclip' binary
----@field base64_path string Path to the 'base64' binary
+---@field linters Linter[] Your linters see |anki.linter|
+---@field transformers Transformer[] Your transformers |anki.transformers|
+---@field xclip_path string Path to the `xclip` binary
+---@field base64_path string Path to the `base64` binary
 
----@type anki.Config
+---@type anki.config
 local Config = {
     tex_support = false,
     models = {},
     contexts = {},
     move_cursor_after_creation = true,
+
+    transformers = {},
+    linters = {},
 
     xclip_path = "xclip",
     base64_path = "base64",
@@ -157,6 +261,8 @@ end
 --created in setup
 local models_to_decknames = {}
 local model_names = {}
+
+---@mod anki.API API
 
 --- Given `arg` a name of a notetype. Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
 ---
@@ -191,12 +297,12 @@ anki.anki = function(arg)
 end
 
 --- Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
---- Deck to which the card will be sent is specified by 'deckname'
---- Fields are that of the 'notetype'
+--- Deck to which the card will be sent is specified by `deckname`
+--- Fields are that of the `notetype`
 ---
---- It will prefill 'fields' and 'tags' specified in the 'context'. See |anki.Context|
---- If 'context' is of a type 'string' it checks user's config. See |anki.Config|
---- If 'context' is of a type 'table' it uses that table directly.
+--- It will prefill `fields` and `tags` specified in the `context`. See |anki.context|
+--- If `context` is of a type `string` it checks user's config. See |anki.config|
+--- If `context` is of a type `table` it uses that table directly.
 ---@param deckname string Name of Anki's deck
 ---@param notetype string Name of Anki' note type
 ---@param context string | table | nil
@@ -259,12 +365,12 @@ anki.ankiWithDeck = function(deckname, notetype, context)
     end
 end
 
---- The same thing as |anki.anki| but it will prefill 'fields' and 'tags' specified in the 'context'.
---- See |anki.Context|
+--- The same thing as |anki.anki| but it will prefill `fields` and `tags` specified in the `context`.
+--- See |anki.context|
 ---
---- If 'context' is of a type 'string' it checks user's config. See |anki.Config|
---- If 'context' is of a type 'table' it uses that table directly.
---- If 'context' is 'nil' it uses value from 'vim.g.anki_context' variable.
+--- If `context` is of a type `string` it checks user's config. See |anki.config|
+--- If `context` is of a type `table` it uses that table directly.
+--- If `context` is `nil` it uses value from `vim.g.anki_context` variable.
 ---@param arg string
 ---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
@@ -300,10 +406,10 @@ anki.ankiWithContext = function(arg, context)
     end
 end
 
---- Sends the current buffer (which can be created using |anki.anki|) to the 'Add' GUI inside Anki.
---- '<br>' is going to be appended to the end of separate lines to get newlines inside Anki.
+--- Sends the current buffer (which can be created using |anki.anki|) to the `Add` GUI inside Anki.
+--- `<br>` is going to be appended to the end of separate lines to get newlines inside Anki.
 --- It will select the specified inside the buffer note type and deck.
---- This will always replace the content inside 'Add' and won't do any checks about it.
+--- This will always replace the content inside `Add` and won't do any checks about it.
 anki.sendgui = function()
     if vim.bo.modified then
         notify("There are unsaved changes in the buffer", vim.log.levels.ERROR)
@@ -314,7 +420,7 @@ anki.sendgui = function()
     local buffer = require("anki.buffer")
 
     local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local parsed = buffer.parse(cur_buf)
+    local parsed = buffer.all(cur_buf, Config.transformers)
     local is_success, data = pcall(api.guiAddCards, parsed)
 
     if is_success then
@@ -346,24 +452,23 @@ anki.send = function(opts)
     local buffer = require("anki.buffer")
 
     local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local parsed = buffer.parse(cur_buf)
-
-    local is_success, data = pcall(api.addNote, parsed, false)
+    local result = buffer.all(cur_buf, Config.transformers)
+    local is_success, data = pcall(api.addNote, result, false)
 
     if is_success then
         notify("Card was added")
         unlock()
-        fields_of_last_note = parsed.note.fields
+        fields_of_last_note = result.note.fields
         return
     else
         if string.find(data, "duplicate") then
             if allow_duplicate then
                 -- adding again because there is no API for just checking for duplicates in AnkiConnect
-                local is_success, data = pcall(api.addNote, parsed, true)
+                local is_success, data = pcall(api.addNote, result, true)
                 if is_success then
                     notify("Card was added. Card you added was a duplicate.")
                     unlock()
-                    fields_of_last_note = parsed.note.fields
+                    fields_of_last_note = result.note.fields
                     return
                 else
                     notify(data, vim.log.levels.ERROR)
@@ -525,13 +630,23 @@ local function launch()
             should_delete_command = false
         end
 
+        vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave", "TextYankPost" }, {
+            pattern = "*.anki",
+            callback = function()
+                require("anki.linters").lint(
+                    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+                    Config.linters
+                )
+            end,
+        })
+
         create_commands()
         has_loaded = true
     end
 end
 
 --- Used to crate association of '.anki' extension to 'anki' filetype (or 'tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
----@param user_cfg anki.Config see |Config|
+---@param user_cfg anki.config see |anki.config|
 anki.setup = function(user_cfg)
     user_cfg = user_cfg or {}
     Config = vim.tbl_deep_extend("force", Config, user_cfg)
@@ -779,10 +894,84 @@ anki.add_image_from_clipboard = function()
 end
 
 ---Returns 'true' after buffer was made but has not been yet sent, false otherwise.
+---
 ---Can be used in thing like lualine as an a visual indicator whatever or card has been sent to anki.
 ---@return boolean
 anki.is_locked = function()
     return is_locked()
+end
+
+---Linter which lints based on the size of a single line and total size of all fields.
+---
+---See |anki.linters| for more information about Linters.
+---@param line_size number Maximum length of one line
+---@param field_size number Maximum length (in characters) of one field
+---@return Linter
+anki.linter_size = function(line_size, field_size)
+    line_size = line_size or 100
+    field_size = field_size or 250
+    return {
+        linter = function(fields, form)
+            local ret = {}
+            for field, lines in pairs(fields) do
+                local counter = 0
+                for ln, line in ipairs(lines) do
+                    if #line >= line_size then
+                        table.insert(ret, {
+                            message = "this line is too long " .. #line,
+                            lnum = lines.line_number + ln,
+                            col = 0,
+                        })
+                    end
+                    counter = counter + #line
+                end
+                if counter >= field_size then
+                    table.insert(ret, {
+                        message = "this field has way too much characters" .. counter,
+                        lnum = lines.line_number,
+                        col = 0,
+                    })
+                end
+            end
+            return ret
+        end,
+        name = "size",
+    }
+end
+
+---Linter which reports badly spelled word in your card.
+---
+---Essentailly `:set spell` but only inside the fields.
+---See |anki.linters| for more information about Linters.
+---@return Linter
+anki.linter_spellcheck = function()
+    return {
+        linter = function(fields)
+            local ret = {}
+
+            for k, v in pairs(fields) do
+                for ln, line in ipairs(v) do
+                    for i, err in ipairs(vim.spell.check(line) or {}) do
+                        local severity
+                        if err[2] == "bad" then
+                            severity = vim.diagnostic.severity.ERROR
+                        else
+                            severity = vim.diagnostic.severity.WARN
+                        end
+                        table.insert(ret, {
+                            severity = severity,
+                            message = err[1],
+                            lnum = v.line_number + ln,
+                            col = err[3] - 1,
+                        })
+                    end
+                end
+            end
+
+            return ret
+        end,
+        name = "spellcheck",
+    }
 end
 
 return anki
