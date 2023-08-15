@@ -90,21 +90,16 @@ local anki = {}
 local has_loaded = false
 local should_delete_command = false
 
----@private
----@class Lock
----@field is_locked boolean
-local lock = { locked = false }
-
-function lock:lock()
-    self.locked = true
+local function lock()
+    vim.b.anki_lock = true
 end
 
-function lock:unlock()
-    self.locked = false
+local function unlock()
+    vim.b.anki_lock = false
 end
 
-function lock:is_locked()
-    return self.locked
+local function is_locked()
+    return vim.b.anki_lock or false
 end
 
 local fields_of_last_note = nil
@@ -169,7 +164,7 @@ local model_names = {}
 --- Name of the deck depends on `arg` and user's config
 ---@param arg string
 anki.anki = function(arg)
-    if lock:is_locked() then
+    if is_locked() then
         notify(
             "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
             vim.log.levels.ERROR
@@ -187,7 +182,7 @@ anki.anki = function(arg)
 
     local anki_table =
         buffer.create(fields, models_to_decknames[arg], arg, nil, Config.tex_support)
-    lock:lock()
+    lock()
 
     vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
     if Config.move_cursor_after_creation then
@@ -206,7 +201,7 @@ end
 ---@param notetype string Name of Anki' note type
 ---@param context string | table | nil
 anki.ankiWithDeck = function(deckname, notetype, context)
-    if lock:is_locked() then
+    if is_locked() then
         notify(
             "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
             vim.log.levels.ERROR
@@ -256,7 +251,7 @@ anki.ankiWithDeck = function(deckname, notetype, context)
     end
 
     local anki_table = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
-    lock:lock()
+    lock()
 
     vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
     if Config.move_cursor_after_creation then
@@ -273,7 +268,7 @@ end
 ---@param arg string
 ---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
-    if lock:is_locked() then
+    if is_locked() then
         notify(
             "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
             vim.log.levels.ERROR
@@ -296,7 +291,7 @@ anki.ankiWithContext = function(arg, context)
 
     local anki_table =
         buffer.create(fields, models_to_decknames[arg], arg, cxt, Config.tex_support)
-    lock:lock()
+    lock()
 
     vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
 
@@ -324,7 +319,7 @@ anki.sendgui = function()
 
     if is_success then
         notify("Card was sent to GUI Add Card")
-        lock:unlock()
+        unlock()
         fields_of_last_note = parsed.note.fields
         return
     else
@@ -357,7 +352,7 @@ anki.send = function(opts)
 
     if is_success then
         notify("Card was added")
-        lock:unlock()
+        unlock()
         fields_of_last_note = parsed.note.fields
         return
     else
@@ -367,7 +362,7 @@ anki.send = function(opts)
                 local is_success, data = pcall(api.addNote, parsed, true)
                 if is_success then
                     notify("Card was added. Card you added was a duplicate.")
-                    lock:unlock()
+                    unlock()
                     fields_of_last_note = parsed.note.fields
                     return
                 else
@@ -438,7 +433,7 @@ local function create_commands()
     end, {})
 
     vim.api.nvim_create_user_command("AnkiUnlock", function()
-        lock:unlock()
+        unlock()
     end, {})
 
     vim.api.nvim_create_user_command("AnkiShowContext", function()
@@ -786,6 +781,8 @@ end
 ---Returns 'true' after buffer was made but has not been yet sent, false otherwise.
 ---Can be used in thing like lualine as an a visual indicator whatever or card has been sent to anki.
 ---@return boolean
-anki.is_locked = function() return lock:is_locked() end
+anki.is_locked = function()
+    return is_locked()
+end
 
 return anki
