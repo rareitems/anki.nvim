@@ -144,7 +144,7 @@ buffer.concat_lines = function(lines)
 end
 
 buffer.transform = function(form, transformers)
-    local t = require("anki.transformers")
+    local t = require("anki.transformer")
 
     -- stylua: ignore
     local result = t.try_to_tranform_with(form, transformers)

@@ -21,7 +21,7 @@ Usage                                                               *anki.usage*
  Send it to anki directly using `:AnkiSend` or send it to `Add` GUI using `:AnkiSendGui` if you want to add picture
 
 ==============================================================================
-Linters                                                           *anki.linters*
+Linter                                                             *anki.linter*
 
 Allows of "statically" checking cards before you sending them to Anki.
 See |anki.Linter|
@@ -63,7 +63,7 @@ Show errors if any of the lines or fields are too long
  }
 <
 
-Linter                                                             *anki.Linter*
+Linter                                                                  *Linter*
     Linter type
 
     Fields: ~
@@ -72,7 +72,7 @@ Linter                                                             *anki.Linter*
         {name}       (string)                                              Name for error purposes
 
 
-Form                                                                *anki.Form*
+Form                                                                      *Form*
     Form type
 
     Fields: ~
@@ -83,7 +83,7 @@ Form                                                                *anki.Form*
 
 
 ==============================================================================
-Transformers                                                 *anki.transformers*
+Transformer                                                   *anki.transformer*
 
 Allows of programatically transforming your cards before sending them to Anki.
 See |anki.Transformer|
@@ -113,7 +113,7 @@ a specific field, which automitacally capitlizes the content inside that field.
  },
 <
 
-Transformer                                                   *anki.Transformer*
+Transformer                                                        *Transformer*
     Transformer type
 
     Fields: ~
@@ -203,7 +203,7 @@ anki.config                                                        *anki.config*
         {contexts}                    (table)                 Table of context names as keys with value of table with `tags` and `fields`. See |anki.context|.
         {move_cursor_after_creation}  (boolean)               If `true` it will move the cursor the position of the first field
         {linters}                     (Linter[])              Your linters see |anki.linter|
-        {transformers}                (Transformer[])         Your transformers |anki.transformers|
+        {transformers}                (Transformer[])         Your transformers |anki.transformer|
         {xclip_path}                  (string)                Path to the `xclip` binary
         {base64_path}                 (string)                Path to the `base64` binary
 
@@ -296,28 +296,51 @@ anki.is_locked()                                                *anki.is_locked*
         (boolean)
 
 
-                                                              *anki.linter_size*
-anki.linter_size({line_size}, {field_size})
+vim:tw=78:ts=8:noet:ft=help:norl:
+==============================================================================
+Linters                                                           *anki.linters*
+
+Collection of linters |anki.linter|
+
+Linters.size()                                               *anki.linters.size*
     Linter which lints based on the size of a single line and total size of all fields.
 
-    See |anki.linters| for more information about Linters.
+    Reference: https://andymatuschak.org/prompts/#litmus
 
-    Parameters: ~
-        {line_size}   (number)  Maximum length of one line
-        {field_size}  (number)  Maximum length (in characters) of one field
+    See |anki.linter| for more information about Linters.
 
     Returns: ~
         (Linter)
 
 
-anki.linter_spellcheck()                                *anki.linter_spellcheck*
+Linters.spellcheck()                                   *anki.linters.spellcheck*
     Linter which reports badly spelled word in your card.
 
-    Essentailly `:set spell` but only inside the fields.
-    See |anki.linters| for more information about Linters.
+    Essentially `:set spell` but only inside the fields.
+    See |anki.linter| for more information about Linters.
 
     Returns: ~
         (Linter)
+
+
+Linters.avoid_binary_prompts()               *anki.linters.avoid_binary_prompts*
+    Linter which reports on fields that are only consisted of "yes" or "no"
+
+    Reference: https://andymatuschak.org/prompts/#litmus
+
+    See |anki.linter| for more information about Linters.
+
+    Returns: ~
+        (Linter)
+
+
+Linters.default_linters()                         *anki.linters.default_linters*
+    Default linters made out of
+    |anki.linters.size|
+    |anki.linters.avoid_binary_prompts|
+
+    Returns: ~
+        (Linter[])
 
 
 vim:tw=78:ts=8:noet:ft=help:norl:

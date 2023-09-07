@@ -21,7 +21,7 @@ Field2
 describe("tranformer tests", function()
     it("sanity check", function()
         require("anki.api")
-        require("anki.transformers")
+        require("anki.transformer")
     end)
 
     it("nothing", function()

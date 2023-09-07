@@ -1,72 +1,139 @@
-local M = {}
+---@mod anki.linters Linters
+---@brief [[
+---Collection of linters |anki.linter|
+---@brief ]]
+local Linters = {}
 
-local function name(name)
-    if not name or #name == 0 then
-        return "In Linter:\n"
-    else
-        return "In Linter '" .. name .. "'\n"
-    end
-end
-
-local function eval_cond(v, form)
-    local c
-    if v.condition then
-        c = v.condition(form)
-    else
-        c = true
-    end
-    return c
-end
-
----@param form table
----@param linters Linter[]
----@param diagnostics table
-M.try_to_lint_with = function(form, linters, diagnostics)
-    if not linters or #linters == 0 then
-        return false
-    end
-
-    for i, v in ipairs(linters) do
-        if eval_cond(v, form) then
-            local success, diags = pcall(v.linter, form.fields, form)
-
-            if not success then
-                error(name(v.name) .. diags)
-            end
-
-            if not diags then
-                error(name(v.name) .. "did not return anything")
-            end
-
-            if type(diags) ~= "table" then
-                error(name(v.name) .. "did not return a table")
-            end
-
-            for _, diag in ipairs(diags) do
-                if not diag.message then
-                    error(name(v.name) .. "did not have diag.message field")
+---Linter which lints based on the size of a single line and total size of all fields.
+---
+---Reference: https://andymatuschak.org/prompts/#litmus
+---
+---See |anki.linter| for more information about Linters.
+---@return Linter
+Linters.size = function(line_size, field_size)
+    line_size = line_size or 110
+    field_size = field_size or 255
+    return {
+        linter = function(fields)
+            local ret = {}
+            for _, lines in pairs(fields) do
+                local counter = 0
+                for ln, line in ipairs(lines) do
+                    if #line > line_size + 10 then
+                        table.insert(ret, {
+                            severity = vim.diagnostic.severity.ERROR,
+                            message = string.format("very long line (length=%s)", #line),
+                            lnum = lines.line_number + ln,
+                            col = 0,
+                        })
+                    elseif line_size + 2 < #line or #line > line_size - 2 then
+                        table.insert(ret, {
+                            severity = vim.diagnostic.severity.WARN,
+                            message = string.format("long line (length=%s)", #line),
+                            lnum = lines.line_number + ln,
+                            col = 0,
+                        })
+                    end
+                    counter = counter + #line
                 end
 
-                table.insert(diagnostics, diag)
+                if counter > field_size + 10 then
+                    table.insert(ret, {
+                        severity = vim.diagnostic.severity.ERROR,
+                        message = string.format("very long field (length=%s)", counter),
+                        lnum = lines.line_number,
+                        col = 0,
+                    })
+                elseif field_size + 2 < counter or counter > field_size - 2 then
+                    table.insert(ret, {
+                        severity = vim.diagnostic.severity.WARN,
+                        message = string.format("long field (length=%s)", counter),
+                        lnum = lines.line_number,
+                        col = 0,
+                    })
+                end
             end
-        end
-    end
+            return ret
+        end,
+        name = "size",
+    }
 end
 
-local ns = vim.api.nvim_create_namespace("anki")
-M.lint = function(cur_buf, linters)
-    local buffer = require("anki.buffer")
-    local form = buffer.parse(cur_buf)
+---Linter which reports badly spelled word in your card.
+---
+---Essentially `:set spell` but only inside the fields.
+---See |anki.linter| for more information about Linters.
+---@return Linter
+Linters.spellcheck = function()
+    return {
+        linter = function(fields)
+            local ret = {}
 
-    -- TODO: add tagger
-    local diagnostics = {}
-    M.try_to_lint_with(form, linters, diagnostics)
-    -- stylua: ignore
-    M.try_to_lint_with(form, require("anki.helpers").global_variable("linters"), diagnostics)
-    -- stylua: ignore
-    M.try_to_lint_with(form, require("anki.helpers").buffer_variable("linters"), diagnostics)
+            for _, v in pairs(fields) do
+                for ln, line in ipairs(v) do
+                    for _, err in ipairs(vim.spell.check(line) or {}) do
+                        local severity
+                        if err[2] == "bad" then
+                            severity = vim.diagnostic.severity.ERROR
+                        else
+                            severity = vim.diagnostic.severity.WARN
+                        end
+                        table.insert(ret, {
+                            severity = severity,
+                            message = err[1],
+                            lnum = v.line_number + ln,
+                            col = err[3] - 1,
+                        })
+                    end
+                end
+            end
 
-    vim.diagnostic.set(ns, 0, diagnostics)
+            return ret
+        end,
+        name = "spellcheck",
+    }
 end
 
-return M
+---Linter which reports on fields that are only consisted of "yes" or "no"
+---
+---Reference: https://andymatuschak.org/prompts/#litmus
+---
+---See |anki.linter| for more information about Linters.
+---@return Linter
+Linters.avoid_binary_prompts = function()
+    return {
+        linter = function(fields)
+            local ret = {}
+
+            for _, v in pairs(fields) do
+                for ln, line in ipairs(v) do
+                    local lowercase_line = string.lower(line)
+                    if lowercase_line == "yes" or lowercase_line == "no" then
+                        table.insert(ret, {
+                            severity = vim.diagnostic.severity.ERROR,
+                            message = "Avoid binary prompts. Try to rephrased this as more open-ended prompts",
+                            lnum = v.line_number + ln,
+                            col = 0,
+                        })
+                    end
+                end
+            end
+
+            return ret
+        end,
+        name = "avoid_binary_prompts",
+    }
+end
+
+---Default linters made out of
+---|anki.linters.size|
+---|anki.linters.avoid_binary_prompts|
+---@return Linter[]
+Linters.default_linters = function()
+    return {
+        Linters.avoid_binary_prompts(),
+        Linters.size(),
+    }
+end
+
+return Linters

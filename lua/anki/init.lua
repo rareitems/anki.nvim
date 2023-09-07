@@ -18,7 +18,7 @@
 --- Send it to anki directly using `:AnkiSend` or send it to `Add` GUI using `:AnkiSendGui` if you want to add picture
 ---@brief ]]
 
----@mod anki.linters Linters
+---@mod anki.linter Linter
 ---@brief [[
 ---Allows of "statically" checking cards before you sending them to Anki.
 ---See |anki.Linter|
@@ -74,7 +74,7 @@
 ---@field tags string[] Table of tags
 ---@field fields table Table of name of a Field to array of strings of content inside that field
 
----@mod anki.transformers Transformers
+---@mod anki.transformer Transformer
 ---@brief [[
 ---Allows of programatically transforming your cards before sending them to Anki.
 ---See |anki.Transformer|
@@ -216,7 +216,7 @@ end
 ---@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.context|.
 ---@field move_cursor_after_creation boolean If `true` it will move the cursor the position of the first field
 ---@field linters Linter[] Your linters see |anki.linter|
----@field transformers Transformer[] Your transformers |anki.transformers|
+---@field transformers Transformer[] Your transformers |anki.transformer|
 ---@field xclip_path string Path to the `xclip` binary
 ---@field base64_path string Path to the `base64` binary
 
@@ -464,7 +464,7 @@ anki.send = function(opts)
         if string.find(data, "duplicate") then
             if allow_duplicate then
                 -- adding again because there is no API for just checking for duplicates in AnkiConnect
-                local is_success, data = pcall(api.addNote, result, true)
+                is_success, data = pcall(api.addNote, result, true)
                 if is_success then
                     notify("Card was added. Card you added was a duplicate.")
                     unlock()
@@ -633,7 +633,7 @@ local function launch()
         vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave", "TextYankPost" }, {
             pattern = "*.anki",
             callback = function()
-                require("anki.linters").lint(
+                require("anki.linter").lint(
                     vim.api.nvim_buf_get_lines(0, 0, -1, false),
                     Config.linters
                 )
@@ -648,6 +648,7 @@ end
 --- Used to crate association of '.anki' extension to 'anki' filetype (or 'tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
 ---@param user_cfg anki.config see |anki.config|
 anki.setup = function(user_cfg)
+    Config.linters = require("anki.linters").default_linters()
     user_cfg = user_cfg or {}
     Config = vim.tbl_deep_extend("force", Config, user_cfg)
 
@@ -899,79 +900,6 @@ end
 ---@return boolean
 anki.is_locked = function()
     return is_locked()
-end
-
----Linter which lints based on the size of a single line and total size of all fields.
----
----See |anki.linters| for more information about Linters.
----@param line_size number Maximum length of one line
----@param field_size number Maximum length (in characters) of one field
----@return Linter
-anki.linter_size = function(line_size, field_size)
-    line_size = line_size or 100
-    field_size = field_size or 250
-    return {
-        linter = function(fields, form)
-            local ret = {}
-            for field, lines in pairs(fields) do
-                local counter = 0
-                for ln, line in ipairs(lines) do
-                    if #line >= line_size then
-                        table.insert(ret, {
-                            message = "this line is too long " .. #line,
-                            lnum = lines.line_number + ln,
-                            col = 0,
-                        })
-                    end
-                    counter = counter + #line
-                end
-                if counter >= field_size then
-                    table.insert(ret, {
-                        message = "this field has way too much characters" .. counter,
-                        lnum = lines.line_number,
-                        col = 0,
-                    })
-                end
-            end
-            return ret
-        end,
-        name = "size",
-    }
-end
-
----Linter which reports badly spelled word in your card.
----
----Essentailly `:set spell` but only inside the fields.
----See |anki.linters| for more information about Linters.
----@return Linter
-anki.linter_spellcheck = function()
-    return {
-        linter = function(fields)
-            local ret = {}
-
-            for k, v in pairs(fields) do
-                for ln, line in ipairs(v) do
-                    for i, err in ipairs(vim.spell.check(line) or {}) do
-                        local severity
-                        if err[2] == "bad" then
-                            severity = vim.diagnostic.severity.ERROR
-                        else
-                            severity = vim.diagnostic.severity.WARN
-                        end
-                        table.insert(ret, {
-                            severity = severity,
-                            message = err[1],
-                            lnum = v.line_number + ln,
-                            col = err[3] - 1,
-                        })
-                    end
-                end
-            end
-
-            return ret
-        end,
-        name = "spellcheck",
-    }
 end
 
 return anki
