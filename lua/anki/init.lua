@@ -210,13 +210,15 @@ local function notify(msg, level)
     })
 end
 
+--TODO: make two Types for Configs one for the user has to supply and one for the in-program
+--
 ---@class anki.config
 ---@field tex_support boolean Basic support for latex inside the `anki` filetype. See |anki.texSupport|.
 ---@field models table<string, string> Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
----@field contexts table Table of context names as keys with value of table with `tags` and `fields`. See |anki.context|.
+---@field contexts table | nil Table of context names as keys with value of table with `tags` and `fields`. See |anki.context|.
 ---@field move_cursor_after_creation boolean If `true` it will move the cursor the position of the first field
----@field linters Linter[] Your linters see |anki.linter|
----@field transformers Transformer[] Your transformers |anki.transformer|
+---@field linters Linter[] | nil Your linters see |anki.linter|
+---@field transformers Transformer[] | nil Your transformers |anki.transformer|
 ---@field xclip_path string Path to the `xclip` binary
 ---@field base64_path string Path to the `base64` binary
 
@@ -630,7 +632,7 @@ local function launch()
             should_delete_command = false
         end
 
-        vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave", "TextYankPost" }, {
+        vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave" }, {
             pattern = "*.anki",
             callback = function()
                 require("anki.linter").lint(
