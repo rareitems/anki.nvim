@@ -8,12 +8,12 @@ This plugin allows to create (and edit in future) Anki card from from Neovim
 ==============================================================================
 Configuration                                               *anki.configuration*
 
- See |anki.config|
+ See |anki.Config|
 
 ==============================================================================
 Usage                                                               *anki.usage*
 
- Setup your config. See |anki.config|
+ Setup your config. See |anki.Config|
  Launch your anki
  Enter a filename with `.anki` extension
  Create a form using `:Anki <your notetype>` command
@@ -29,7 +29,7 @@ See |anki.Linter|
 You can define a bunch of function which given fields from the buffer can report various errors (spellchecking, too long lines, etc.) which will show up in `nvim` diagnostics.
 Kind of like "LSP" for your Anki cards.
 
-Can be set in either the configuration |anki.config| or in buffer (`vim.b.anki.linters`) or global (`vim.b.anki.linters`) variables
+Can be set in either the configuration |anki.Config| or in buffer (`vim.b.anki.linters`) or global (`vim.b.anki.linters`) variables
 
 Example:
 Show errors if any of the lines or fields are too long
@@ -63,7 +63,7 @@ Show errors if any of the lines or fields are too long
  }
 <
 
-Linter                                                                  *Linter*
+Linter                                                             *anki.Linter*
     Linter type
 
     Fields: ~
@@ -72,7 +72,7 @@ Linter                                                                  *Linter*
         {name}       (string)                                              Name for error purposes
 
 
-Form                                                                      *Form*
+Form                                                                 *anki.Form*
     Form type
 
     Fields: ~
@@ -91,7 +91,7 @@ See |anki.Transformer|
 You can define a bunch of function which given fields from the buffer can transform fields
 of your cards (correct misspells, capitlize certain fields etc.).
 
-Can be set in either the configuration |anki.config| or in buffer (`vim.b.anki.transformers`) or global (`vim.b.anki.transformers`) variables
+Can be set in either the configuration |anki.Config| or in buffer (`vim.b.anki.transformers`) or global (`vim.b.anki.transformers`) variables
 
 Example:
 Runs `titlecase`(https://github.com/wezm/titlecase) binary on specific content from
@@ -113,7 +113,7 @@ a specific field, which automitacally capitlizes the content inside that field.
  },
 <
 
-Transformer                                                        *Transformer*
+Transformer                                                   *anki.Transformer*
     Transformer type
 
     Fields: ~
@@ -195,7 +195,7 @@ If you are using luasnip you can use something like this to create clozes more e
  end
 <
 
-anki.config                                                        *anki.config*
+Config                                                             *anki.Config*
 
     Fields: ~
         {tex_support}                 (boolean)               Basic support for latex inside the `anki` filetype. See |anki.texSupport|.
@@ -228,7 +228,7 @@ anki.ankiWithDeck({deckname}, {notetype}, {context})
      Fields are that of the `notetype`
 
      It will prefill `fields` and `tags` specified in the `context`. See |anki.context|
-     If `context` is of a type `string` it checks user's config. See |anki.config|
+     If `context` is of a type `string` it checks user's config. See |anki.Config|
      If `context` is of a type `table` it uses that table directly.
 
     Parameters: ~
@@ -241,7 +241,7 @@ anki.ankiWithContext({arg}, {context})                    *anki.ankiWithContext*
      The same thing as |anki.anki| but it will prefill `fields` and `tags` specified in the `context`.
      See |anki.context|
 
-     If `context` is of a type `string` it checks user's config. See |anki.config|
+     If `context` is of a type `string` it checks user's config. See |anki.Config|
      If `context` is of a type `table` it uses that table directly.
      If `context` is `nil` it uses value from `vim.g.anki_context` variable.
 
@@ -277,7 +277,7 @@ anki.setup({user_cfg})                                              *anki.setup*
      Used to crate association of '.anki' extension to 'anki' filetype (or 'tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
 
     Parameters: ~
-        {user_cfg}  (anki.config)  see |anki.config|
+        {user_cfg}  (Config)  see |anki.Config|
 
 
 anki.add_image_from_clipboard()                  *anki.add_image_from_clipboard*
@@ -296,7 +296,9 @@ anki.is_locked()                                                *anki.is_locked*
         (boolean)
 
 
-vim:tw=78:ts=8:noet:ft=help:norl:
+==============================================================================
+                                                                          *anki*
+
 ==============================================================================
 Linters                                                           *anki.linters*
 

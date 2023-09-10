@@ -5,12 +5,12 @@
 
 ---@mod anki.configuration Configuration
 ---@brief [[
---- See |anki.config|
+--- See |anki.Config|
 ---@brief ]]
 
 ---@mod anki.usage Usage
 ---@brief [[
---- Setup your config. See |anki.config|
+--- Setup your config. See |anki.Config|
 --- Launch your anki
 --- Enter a filename with `.anki` extension
 --- Create a form using `:Anki <your notetype>` command
@@ -26,7 +26,7 @@
 ---You can define a bunch of function which given fields from the buffer can report various errors (spellchecking, too long lines, etc.) which will show up in `nvim` diagnostics.
 ---Kind of like "LSP" for your Anki cards.
 ---
----Can be set in either the configuration |anki.config| or in buffer (`vim.b.anki.linters`) or global (`vim.b.anki.linters`) variables
+---Can be set in either the configuration |anki.Config| or in buffer (`vim.b.anki.linters`) or global (`vim.b.anki.linters`) variables
 ---
 ---Example:
 ---Show errors if any of the lines or fields are too long
@@ -82,7 +82,7 @@
 ---You can define a bunch of function which given fields from the buffer can transform fields
 ---of your cards (correct misspells, capitlize certain fields etc.).
 ---
----Can be set in either the configuration |anki.config| or in buffer (`vim.b.anki.transformers`) or global (`vim.b.anki.transformers`) variables
+---Can be set in either the configuration |anki.Config| or in buffer (`vim.b.anki.transformers`) or global (`vim.b.anki.transformers`) variables
 ---
 ---Example:
 ---Runs `titlecase`(https://github.com/wezm/titlecase) binary on specific content from
@@ -212,7 +212,7 @@ end
 
 --TODO: make two Types for Configs one for the user has to supply and one for the in-program
 --
----@class anki.config
+---@class Config
 ---@field tex_support boolean Basic support for latex inside the `anki` filetype. See |anki.texSupport|.
 ---@field models table<string, string> Table of name of notetypes (keys) to name of decks (values). Which notetype should be send to which deck
 ---@field contexts table | nil Table of context names as keys with value of table with `tags` and `fields`. See |anki.context|.
@@ -222,7 +222,7 @@ end
 ---@field xclip_path string Path to the `xclip` binary
 ---@field base64_path string Path to the `base64` binary
 
----@type anki.config
+---@type Config
 local Config = {
     tex_support = false,
     models = {},
@@ -303,7 +303,7 @@ end
 --- Fields are that of the `notetype`
 ---
 --- It will prefill `fields` and `tags` specified in the `context`. See |anki.context|
---- If `context` is of a type `string` it checks user's config. See |anki.config|
+--- If `context` is of a type `string` it checks user's config. See |anki.Config|
 --- If `context` is of a type `table` it uses that table directly.
 ---@param deckname string Name of Anki's deck
 ---@param notetype string Name of Anki' note type
@@ -370,7 +370,7 @@ end
 --- The same thing as |anki.anki| but it will prefill `fields` and `tags` specified in the `context`.
 --- See |anki.context|
 ---
---- If `context` is of a type `string` it checks user's config. See |anki.config|
+--- If `context` is of a type `string` it checks user's config. See |anki.Config|
 --- If `context` is of a type `table` it uses that table directly.
 --- If `context` is `nil` it uses value from `vim.g.anki_context` variable.
 ---@param arg string
@@ -648,7 +648,7 @@ local function launch()
 end
 
 --- Used to crate association of '.anki' extension to 'anki' filetype (or 'tex.anki' if |anki.TexSupport| is enabled in config) and setup the user's config.
----@param user_cfg anki.config see |anki.config|
+---@param user_cfg Config see |anki.Config|
 anki.setup = function(user_cfg)
     Config.linters = require("anki.linters").default_linters()
     user_cfg = user_cfg or {}
@@ -904,4 +904,5 @@ anki.is_locked = function()
     return is_locked()
 end
 
+---@mod anki
 return anki
