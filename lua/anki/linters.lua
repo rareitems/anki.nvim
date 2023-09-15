@@ -11,8 +11,8 @@ local Linters = {}
 ---See |anki.linter| for more information about Linters.
 ---@return Linter
 Linters.size = function(line_size, field_size)
-    line_size = line_size or 110
-    field_size = field_size or 255
+    line_size = line_size or 130
+    field_size = field_size or 250
     return {
         linter = function(fields)
             local ret = {}
