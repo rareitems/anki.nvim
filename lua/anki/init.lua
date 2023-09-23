@@ -189,8 +189,21 @@ local anki = {}
 local has_loaded = false
 local should_delete_command = false
 
-local function lock()
-    vim.b.anki_lock = true
+local AUTOCMD_GROUP = vim.api.nvim_create_augroup("ANKI", { clear = true })
+
+local function create_lock()
+    if not vim.b.anki_lock_created then
+        vim.api.nvim_create_autocmd("BufModifiedSet", {
+            buffer = 0,
+            group = AUTOCMD_GROUP,
+            callback = function()
+                if vim.bo.modified then
+                    vim.b.anki_lock = true
+                end
+            end,
+        })
+        vim.b.anki_lock_created = true
+    end
 end
 
 local function unlock()
@@ -247,8 +260,8 @@ local function get_context(arg)
         else
             error(
                 "Supplied a string '"
-                    .. arg
-                    .. "' to context. But said context is not defined in the config or config is incorrectly defined"
+                .. arg
+                .. "' to context. But said context is not defined in the config or config is incorrectly defined"
             )
         end
     end
@@ -290,9 +303,9 @@ anki.anki = function(arg)
 
     local anki_table =
         buffer.create(fields, models_to_decknames[arg], arg, nil, Config.tex_support)
-    lock()
-
     vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+    vim.bo.modified = false -- don't want to count filling the buffer with the form as modifing it
+
     if Config.move_cursor_after_creation then
         vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
     end
@@ -359,9 +372,9 @@ anki.ankiWithDeck = function(deckname, notetype, context)
     end
 
     local anki_table = buffer.create(fields, deckname, notetype, cxt, Config.tex_support)
-    lock()
-
     vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+    vim.bo.modified = false -- don't want to count filling the buffer with the form as modifing it
+
     if Config.move_cursor_after_creation then
         vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
     end
@@ -399,9 +412,8 @@ anki.ankiWithContext = function(arg, context)
 
     local anki_table =
         buffer.create(fields, models_to_decknames[arg], arg, cxt, Config.tex_support)
-    lock()
-
     vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+    vim.bo.modified = false -- don't want to count filling the buffer with the form as modifing it
 
     if Config.move_cursor_after_creation then
         vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
@@ -504,6 +516,7 @@ anki.fill_field_from_last_note = function()
         return
     end
 
+    assert(fields_of_last_note)
     if fields_of_last_note[field] then
         local replacement =
             vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
@@ -600,8 +613,8 @@ local function load()
         if not models[m] then
             error(
                 "Note Type (model) name '"
-                    .. m
-                    .. "' from your config was not found in Anki"
+                .. m
+                .. "' from your config was not found in Anki"
             )
         end
         models_to_decknames[m] = d
@@ -633,6 +646,7 @@ local function launch()
         end
 
         vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave" }, {
+            group = AUTOCMD_GROUP,
             pattern = "*.anki",
             callback = function()
                 require("anki.linter").lint(
@@ -640,6 +654,12 @@ local function launch()
                     Config.linters
                 )
             end,
+        })
+
+        vim.api.nvim_create_autocmd("BufEnter", {
+            group = AUTOCMD_GROUP,
+            pattern = "*.anki",
+            callback = create_lock,
         })
 
         create_commands()
@@ -662,6 +682,7 @@ anki.setup = function(user_cfg)
         })
 
         vim.api.nvim_create_autocmd("FileType", {
+            group = AUTOCMD_GROUP,
             pattern = "tex.anki",
             callback = function()
                 local status, res = pcall(launch)
@@ -680,6 +701,7 @@ anki.setup = function(user_cfg)
         })
 
         vim.api.nvim_create_autocmd("FileType", {
+            group = AUTOCMD_GROUP,
             pattern = "anki",
             callback = function()
                 local status, res = pcall(launch)
