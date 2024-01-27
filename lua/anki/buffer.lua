@@ -48,7 +48,10 @@ buffer.create = function(fields, deckname, modelname, context, latex_support)
 
         table.insert(b, field)
         if context and context.fields and context.fields[e] then
-            table.insert(b, context.fields[e])
+            local split_by_n = vim.split(context.fields[e], "\n")
+            for _, k in ipairs(split_by_n) do
+                table.insert(b, k)
+            end
         else
             table.insert(b, "")
         end
