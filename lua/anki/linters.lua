@@ -108,7 +108,10 @@ Linters.avoid_binary_prompts = function()
             for _, v in pairs(fields) do
                 for ln, line in ipairs(v) do
                     local lowercase_line = string.lower(line)
-                    if lowercase_line == "yes" or lowercase_line == "no" then
+                    if
+                        lowercase_line == "yes"
+                        or lowercase_line == "no" and #lowercase_line <= 5
+                    then
                         table.insert(ret, {
                             severity = vim.diagnostic.severity.ERROR,
                             message = "Avoid binary prompts. Try to rephrased this as more open-ended prompts",

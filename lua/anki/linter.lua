@@ -1,10 +1,10 @@
 local M = {}
 
-local function name(name)
-    if not name or #name == 0 then
+local function name(n)
+    if not n or #n == 0 then
         return "In Linter:\n"
     else
-        return "In Linter '" .. name .. "'\n"
+        return "In Linter '" .. n .. "'\n"
     end
 end
 
@@ -26,7 +26,7 @@ M.try_to_lint_with = function(form, linters, diagnostics)
         return false
     end
 
-    for i, v in ipairs(linters) do
+    for _, v in ipairs(linters) do
         if eval_cond(v, form) then
             local success, diags = pcall(v.linter, form.fields, form)
 
