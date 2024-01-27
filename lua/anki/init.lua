@@ -626,7 +626,7 @@ local function load()
     vim.api.nvim_set_hl(0, "ankiDeckname", { link = "Special" })
     vim.api.nvim_set_hl(0, "ankiModelname", { link = "Special" })
     vim.api.nvim_set_hl(0, "ankiTags", { link = "Special" })
-    vim.api.nvim_set_hl(0, "ankiField", { link = "@namespace" })
+    vim.api.nvim_set_hl(0, "ankiField", { link = "@module" })
 end
 
 local function launch()
