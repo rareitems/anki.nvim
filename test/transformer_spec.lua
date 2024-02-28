@@ -25,25 +25,25 @@ describe("tranformer tests", function()
     end)
 
     it("nothing", function()
-        local t = require("anki.buffer").transform(data, {
+        local t = require("anki.buffer").all(data, {
             {
-                transformation = function(form) end,
+                transformation = function(_) end,
             },
         })
         assert.are.same(
-            { "Field2 ", "Field2 ", "Field2 ", "Field2 ", "Field2 ", "Field2" },
-            t.fields["Field2"]
+            "Field1 Field1 Field1 Field1 Field1 Field1",
+            t.note.fields["Field1"]
         )
     end)
 
     it("simple", function()
-        local t = require("anki.buffer").transform(data, {
+        local t = require("anki.buffer").all(data, {
             {
                 transformation = function(form)
                     return { Field2 = { "a" } }
                 end,
             },
         })
-        assert.are.same({ "a" }, t.fields["Field2"])
+        assert.are.same("a", t.note.fields["Field2"])
     end)
 end)
