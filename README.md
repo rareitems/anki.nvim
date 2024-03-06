@@ -4,6 +4,11 @@ Create and add anki cards directly from your neovim.
 
 ![anki](https://user-images.githubusercontent.com/83038443/200166900-42f2be8c-15f3-4929-9a36-147ed8fc7720.gif)
 
+## Features
+- Create new cards directly from Neovim
+- Edit cards directly from anki in Neovim
+- Transform and lint your cards as you add them from Neovim
+
 ## Requirements
 
 - Neovim >= 0.8.0
@@ -11,6 +16,7 @@ Create and add anki cards directly from your neovim.
 - [AnkiConnect](https://ankiweb.net/shared/info/2055492159)
 - curl
 - (optional) [xclip](https://github.com/astrand/xclip) and base64 for directly adding images from clipboard
+
 ## Installation and Setup
 
 - with [packer.nvim](https://github.com/wbthomason/packer.nvim)
@@ -55,7 +61,7 @@ use({
 }
 ```
 
-See more details under Config section in [help file](doc/anki.txt).
+See more details under Config section in [help file](doc/anki.nvim.txt).
 
 ## Usage
 
