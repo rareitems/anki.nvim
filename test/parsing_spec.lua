@@ -44,27 +44,27 @@ describe("parsing tests", function()
     end)
 
     it("modelname", function()
-        local t = require("anki.buffer").parse(data, true)
+        local t = require("anki.buffer").parse(data)
         assert.are.equal("Super Basic", t.modelName)
     end)
 
     it("deckname", function()
-        local t = require("anki.buffer").parse(data, true)
+        local t = require("anki.buffer").parse(data)
         assert.are.equal("Parent::Child", t.deckName)
     end)
 
     it("tags", function()
-        local t = require("anki.buffer").parse(data, true)
+        local t = require("anki.buffer").parse(data)
         assert.are.same({ "TAG0", "TAG1", "TAG::TAG", "TAG::TAG::TAG" }, t.tags)
     end)
 
     it("field0", function()
-        local x, y = require("anki.buffer").parse(data, true)
-        assert.are.same({ "Field0 information", line_number = 4 }, x.fields.Field0)
+        local x, y = require("anki.buffer").parse(data)
+        assert.are.same({ "Field0 information", line_number = 3 }, x.fields.Field0)
     end)
 
     it("field1", function()
-        local t = require("anki.buffer").parse(data, false)
+        local t = require("anki.buffer").parse(data)
         assert.are.same(
             [[Field1<br>
 Field1<br>
@@ -77,7 +77,7 @@ Field1]],
     end)
 
     it("field1WithNumberas", function()
-        local x, y = require("anki.buffer").parse(data, true)
+        local x, y = require("anki.buffer").parse(data)
 
         for _, v in ipairs(x.fields["Field1"]) do
             assert.are.same(v, "Field1")
@@ -90,17 +90,17 @@ Field1]],
             "Field1",
             "Field1",
             "Field1",
-            line_number = 7,
+            line_number = 6,
         }, x.fields["Field1"])
     end)
 
     it("field2", function()
-        local x, y = require("anki.buffer").parse(data, true)
-        assert.are.same({ "", line_number = 15 }, x.fields["Field2"])
+        local x, y = require("anki.buffer").parse(data)
+        assert.are.same({ "", line_number = 14 }, x.fields["Field2"])
     end)
 
     it("field8", function()
-        local x, y = require("anki.buffer").parse(data, true)
-        assert.are.same({ line_number = 36 }, x.fields["Field8"])
+        local x, y = require("anki.buffer").parse(data)
+        assert.are.same({ nil, line_number = 35 }, x.fields["Field8"])
     end)
 end)

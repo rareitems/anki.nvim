@@ -1,4 +1,7 @@
-local buffer = {}
+local M = {}
+local UTIL = require("anki.utils")
+
+--TODO: add noteID
 
 ---@class TableAnki
 ---@field form table
@@ -6,12 +9,13 @@ local buffer = {}
 
 ---Creates a table of lines according to given inputs
 ---@param fields table Table of field names
----@param deckname string Name of the deck
+---@param deckname string | nil Name of the deck
 ---@param modelname string Name of the model (note type)
 ---@param context table | nil Table of tags and fields to prefill
 ---@param latex_support boolean If true insert lines for tex support inside a buffer
+---@param noteId number | nil If true insert lines for tex support inside a buffer
 ---@return TableAnki
-buffer.create = function(fields, deckname, modelname, context, latex_support)
+M.create = function(fields, deckname, modelname, context, latex_support, noteId)
     local b = {}
 
     local pos = {
@@ -27,9 +31,19 @@ buffer.create = function(fields, deckname, modelname, context, latex_support)
         pos.pos = pos.pos + 4
     end
 
-    table.insert(b, "%%MODELNAME " .. modelname)
-    table.insert(b, "%%DECKNAME " .. deckname)
-    pos.pos = pos.pos + 2
+
+    if noteId then
+        table.insert(b, "%%NOTEID " .. noteId)
+        pos.pos = pos.pos + 1
+    else
+        table.insert(b, "%%MODELNAME " .. modelname)
+        pos.pos = pos.pos + 1
+
+        if deckname then
+            table.insert(b, "%%DECKNAME " .. deckname)
+            pos.pos = pos.pos + 1
+        end
+    end
 
     if context and context.tags then
         table.insert(b, "%%TAGS" .. " " .. context.tags)
@@ -48,9 +62,17 @@ buffer.create = function(fields, deckname, modelname, context, latex_support)
 
         table.insert(b, field)
         if context and context.fields and context.fields[e] then
-            local split_by_n = vim.split(context.fields[e], "\n")
-            for _, k in ipairs(split_by_n) do
-                table.insert(b, k)
+            local t = type(context.fields[e])
+
+            if t == "string" then
+                local split_by_n = vim.split(context.fields[e], "\n")
+                for _, k in ipairs(split_by_n) do
+                    table.insert(b, k)
+                end
+            elseif t == "table"  then
+                for _, k in ipairs(context.fields[e]) do
+                    table.insert(b, k)
+                end
             end
         else
             table.insert(b, "")
@@ -70,7 +92,7 @@ end
 
 ---Parses an input into a table with 'note' subtable which can be send AnkiConnect
 ---@return Form, table?
-buffer.parse = function(input)
+M.parse = function(input)
     local result = { fields = {} }
 
     local lines
@@ -92,9 +114,16 @@ buffer.parse = function(input)
                 goto continue
             end
 
+
             if line_by_space[1] == "%%MODELNAME" then
                 table.remove(line_by_space, 1)
                 result.modelName = table.concat(line_by_space, " ")
+                goto continue
+            end
+
+            if line_by_space[1] == "%%NOTEID" then
+                table.remove(line_by_space, 1)
+                result.noteId = table.concat(line_by_space, " ")
                 goto continue
             end
 
@@ -112,11 +141,7 @@ buffer.parse = function(input)
                     result.fields[is_inside_field.name].line_number = is_inside_field.line_number
                         - 1
                 else
-                    vim.notify(
-                        "Field with name '"
-                            .. is_inside_field.name
-                            .. "' appears twice. Overwrote the data"
-                    )
+                    UTIL.notify_info("Field with name '" .. is_inside_field.name .. "' appears twice. Overwrote the data")
                 end
 
                 is_inside_field.is = false
@@ -142,11 +167,49 @@ buffer.parse = function(input)
     return result
 end
 
-buffer.concat_lines = function(lines)
+---@class Field
+---@field value string
+---@field order number
+
+---@class AnkiNote
+---@field modelName string
+---@field noteId number
+---@field tags table<string>
+---@field fields table<Field>
+
+---@param ankiNote AnkiNote
+---@return {fields_names: table<string>, fields_values: table<string>, modelname: string, context: table, noteId: number, tags: string}
+M.parse_form_from_anki = function(ankiNote)
+    local fields_names = {}
+    local field_values = {}
+
+    for k, v in pairs(ankiNote.fields) do
+        fields_names[v.order + 1] = k
+
+        local f = string.gsub(v.value, "[\n\r]", "")
+        local split = vim.fn.split(f, "<br>")
+
+        if #split ~= 0 then
+            field_values[k] = split
+        else
+            field_values[k] = { "" }
+        end
+    end
+
+    return {
+        fields_names = fields_names,
+        fields_values = field_values,
+        modelname = ankiNote.modelName,
+        noteId = ankiNote.noteId,
+        tags = vim.fn.join(ankiNote.tags, " "),
+    }
+end
+
+M.concat_lines = function(lines)
     return table.concat(lines, "<br>\n")
 end
 
-buffer.transform = function(form, transformers)
+M.transform = function(form, transformers)
     local t = require("anki.transformer")
 
     -- stylua: ignore
@@ -159,17 +222,17 @@ buffer.transform = function(form, transformers)
     return result
 end
 
-buffer.all = function(cur_buf, transformers)
-    local form = buffer.parse(cur_buf)
-    form = buffer.transform(form, transformers)
+M.all = function(cur_buf, transformers)
+    local form = M.parse(cur_buf)
+    form = M.transform(form, transformers)
 
     -- TODO: add tagger
 
     for k, v in pairs(form.fields) do
-        form.fields[k] = buffer.concat_lines(v)
+        form.fields[k] = M.concat_lines(v)
     end
 
     return { note = form }
 end
 
-return buffer
+return M

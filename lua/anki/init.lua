@@ -1,14 +1,22 @@
----@mod anki.introduction Introduction
+---@mod anki Plugin for operating with anki directly from neovim
+
+---@mod anki.Introduction Introduction
 ---@brief [[
 ---This plugin allows to create (and edit in future) Anki card from from Neovim
 ---@brief ]]
 
----@mod anki.configuration Configuration
+---@mod anki.Configuration Configuration
 ---@brief [[
 --- See |anki.Config|
 ---@brief ]]
 
----@mod anki.usage Usage
+---@mod anki.OpenNotesFromAnki Open notes from anki
+---@brief [[
+--- If you want to edit your notes directly from Anki using this neovim and this plugin
+--- check out this anki addon https://ankiweb.net/shared/info/220273024
+---@brief ]]
+
+---@mod anki.Usage Usage
 ---@brief [[
 --- Setup your config. See |anki.Config|
 --- Launch your anki
@@ -18,7 +26,7 @@
 --- Send it to anki directly using `:AnkiSend` or send it to `Add` GUI using `:AnkiSendGui` if you want to add picture
 ---@brief ]]
 
----@mod anki.linter Linter
+---@mod anki.Linter Linter
 ---@brief [[
 ---Allows of "statically" checking cards before you sending them to Anki.
 ---See |anki.Linter|
@@ -70,11 +78,12 @@
 ---Form type
 ---@class Form
 ---@field modelName string Name of the note (model)
----@field deckName string Name of the deck
+---@field deckName? string Name of the deck
+---@field noteId? number Id of the Note
 ---@field tags string[] Table of tags
 ---@field fields table Table of name of a Field to array of strings of content inside that field
 
----@mod anki.transformer Transformer
+---@mod anki.Transformer Transformer
 ---@brief [[
 ---Allows of programatically transforming your cards before sending them to Anki.
 ---See |anki.Transformer|
@@ -111,7 +120,7 @@
 ---@field transformation fun(fields : table<string, string[]>, form : Form) : table<string, string[]> Function which does the transformation on the fields and then returns it
 ---@field name string Name for error reporting purposes
 
----@mod anki.context Context
+---@mod anki.Context Context
 ---@brief [[
 --- Context can be used to prefill certain `field`s or `tag` during the creation of the buffer form using |anki.anki|
 --- This can be used to mimic the idea of sticky fields from anki's 'Add' menu but with more control.
@@ -135,7 +144,7 @@
 ---<
 ---@brief ]]
 
----@mod anki.highlights Highlights
+---@mod anki.Highlights Highlights
 ---@brief [[
 ---There are following highlights with their default values
 --->lua
@@ -148,7 +157,7 @@
 ---<
 ---@brief ]]
 
----@mod anki.texSupport TexSupport
+---@mod anki.TexSupport TexSupport
 ---@brief [[
 ---With this enabled files with `.anki` extension will be set to filetype `anki.tex` instead of simply `anki`
 ---And it also will add
@@ -164,7 +173,7 @@
 ---This allows usage of vimtex, tex snippets etc. while creating anki cards.
 ---@brief ]]
 
----@mod anki.clozes Clozes
+---@mod anki.Clozes Clozes
 ---@brief [[
 ---If you are using luasnip you can use something like this to create clozes more easily.
 --->lua
@@ -183,13 +192,15 @@
 --- end
 ---<
 ---@brief ]]
-
+vim.g.anki = {}
 local anki = {}
 
 local has_loaded = false
 local should_delete_command = false
+local fields_of_last_note = nil
 
 local AUTOCMD_GROUP = vim.api.nvim_create_augroup("ANKI", { clear = true })
+local UTIL = require("anki.utils")
 
 local function create_lock()
     if not vim.b.anki_lock_created then
@@ -212,15 +223,6 @@ end
 
 local function is_locked()
     return vim.b.anki_lock or false
-end
-
-local fields_of_last_note = nil
-
-local function notify(msg, level)
-    vim.notify("anki: " .. msg, level or vim.log.levels.INFO, {
-        title = "anki.nvim",
-        icon = "󰘸",
-    })
 end
 
 --TODO: make two Types for Configs one for the user has to supply and one for the in-program
@@ -260,8 +262,8 @@ local function get_context(arg)
         else
             error(
                 "Supplied a string '"
-                .. arg
-                .. "' to context. But said context is not defined in the config or config is incorrectly defined"
+                    .. arg
+                    .. "' to context. But said context is not defined in the config or config is incorrectly defined"
             )
         end
     end
@@ -277,18 +279,17 @@ end
 local models_to_decknames = {}
 local model_names = {}
 
----@mod anki.API API
+---@mod anki.api
 
---- Given `arg` a name of a notetype. Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
+--- Given `arg` a name of a notetype. Fills the current buffer with a form which later can be send to anki using |anki.api.send| or |anki.api.sendgui|.
 ---
 --- Name of the fields on the form depend on the `arg`
 --- Name of the deck depends on `arg` and user's config
 ---@param arg string
 anki.anki = function(arg)
     if is_locked() then
-        notify(
-            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
-            vim.log.levels.ERROR
+        UTIL.notify_error(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
         )
         return
     end
@@ -311,7 +312,7 @@ anki.anki = function(arg)
     end
 end
 
---- Fills the current buffer with a form which later can be send to anki using `send` or `sendgui`.
+--- Fills the current buffer with a form which later can be send to anki using |api.anki.send| or |api.anki.sendgui|
 --- Deck to which the card will be sent is specified by `deckname`
 --- Fields are that of the `notetype`
 ---
@@ -323,9 +324,8 @@ end
 ---@param context string | table | nil
 anki.ankiWithDeck = function(deckname, notetype, context)
     if is_locked() then
-        notify(
-            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
-            vim.log.levels.ERROR
+        UTIL.notify_error(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
         )
         return
     end
@@ -339,20 +339,20 @@ anki.ankiWithDeck = function(deckname, notetype, context)
         if status then
             cxt = res
         else
-            notify(res, vim.log.levels.ERROR)
+            UTIL.notify_error(res)
             return
         end
     end
 
     local status, fields = pcall(api.modelFieldNames, notetype)
     if not status then
-        notify(fields, vim.log.levels.ERROR)
+        UTIL.notify_error(fields)
         return
     end
 
     local s1, decknames = pcall(api.deckNames)
     if not s1 then
-        notify(decknames, vim.log.levels.ERROR)
+        UTIL.notify_error(decknames)
         return
     end
 
@@ -364,9 +364,8 @@ anki.ankiWithDeck = function(deckname, notetype, context)
         end
     end
     if not has_found_deck then
-        notify(
-            "Given deck '" .. deckname .. "' does not exist in your Anki collection",
-            vim.log.levels.ERROR
+        UTIL.notify_error(
+            "Given deck '" .. deckname .. "' does not exist in your Anki collection"
         )
         return
     end
@@ -380,7 +379,7 @@ anki.ankiWithDeck = function(deckname, notetype, context)
     end
 end
 
---- The same thing as |anki.anki| but it will prefill `fields` and `tags` specified in the `context`.
+--- The same thing as |anki.api.anki| but it will prefill `fields` and `tags` specified in the `context`.
 --- See |anki.context|
 ---
 --- If `context` is of a type `string` it checks user's config. See |anki.Config|
@@ -390,9 +389,8 @@ end
 ---@param context string | table | nil
 anki.ankiWithContext = function(arg, context)
     if is_locked() then
-        notify(
-            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'",
-            vim.log.levels.ERROR
+        UTIL.notify_error(
+            "You have not send the current buffer to Anki.\nIf you are sure you want to overwrite the current buffer unlock it with ':AnkiUnlock'"
         )
         return
     end
@@ -410,6 +408,7 @@ anki.ankiWithContext = function(arg, context)
         return
     end
 
+    -- TODO: models_to_decknames[arg] this probably should get checked
     local anki_table =
         buffer.create(fields, models_to_decknames[arg], arg, cxt, Config.tex_support)
     vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
@@ -420,13 +419,13 @@ anki.ankiWithContext = function(arg, context)
     end
 end
 
---- Sends the current buffer (which can be created using |anki.anki|) to the `Add` GUI inside Anki.
+--- Sends the current buffer (which can be created using |anki.api.anki|) to the `Add` GUI inside Anki.
 --- `<br>` is going to be appended to the end of separate lines to get newlines inside Anki.
 --- It will select the specified inside the buffer note type and deck.
 --- This will always replace the content inside `Add` and won't do any checks about it.
 anki.sendgui = function()
     if vim.bo.modified then
-        notify("There are unsaved changes in the buffer", vim.log.levels.ERROR)
+        UTIL.notify_error("There are unsaved changes in the buffer")
         return
     end
 
@@ -435,65 +434,130 @@ anki.sendgui = function()
 
     local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local parsed = buffer.all(cur_buf, Config.transformers)
+    if parsed.note.noteId then
+        local noteId = tonumber(parsed.note.noteId)
+        api.guiBrowse("nid:" .. noteId)
+        return
+    end
     local is_success, data = pcall(api.guiAddCards, parsed)
 
     if is_success then
-        notify("Card was sent to GUI Add Card")
+        UTIL.notify("Card was sent to GUI Add Card")
         unlock()
         fields_of_last_note = parsed.note.fields
         return
     else
-        notify(data, vim.log.levels.ERROR)
+        UTIL.notify_error(data)
     end
 end
 
---- Sends the current buffer (which can be created using |anki.anki|) directly to Anki.
+--- Sends the current buffer (which can be created using |anki.api.anki|) directly to Anki as
+--- a new note or if `NOTEID` is present in the buffer, plugin will try to update a note
+--- with that id.
+---
 --- '<br>' is going to be appended to the end of separate lines to get newlines inside Anki.
---- It will send it to the specified inside the buffer deck using specified note type.
---- If duplicate in the specified deck is detected the card won't be created and user will be prompted about it.
+---
 ---@param opts table|nil optional configuration options:
 ---  • {allow_duplicate} (boolean) If true card will be created even if it is a duplicate
+---@return {successfullyUpdated: boolean?, successfullySent: boolean?}
 anki.send = function(opts)
     opts = opts or {}
     local allow_duplicate = opts.allow_duplicate or false
 
     if vim.bo.modified then
-        notify("There are unsaved changes in the buffer", vim.log.levels.ERROR)
-        return
+        UTIL.notify_error("There are unsaved changes in the buffer")
+        return {}
     end
 
     local api = require("anki.api")
     local buffer = require("anki.buffer")
 
     local cur_buf = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local result = buffer.all(cur_buf, Config.transformers)
-    local is_success, data = pcall(api.addNote, result, false)
+    local parsed = buffer.all(cur_buf, Config.transformers)
 
-    if is_success then
-        notify("Card was added")
-        unlock()
-        fields_of_last_note = result.note.fields
-        return
-    else
-        if string.find(data, "duplicate") then
-            if allow_duplicate then
-                -- adding again because there is no API for just checking for duplicates in AnkiConnect
-                is_success, data = pcall(api.addNote, result, true)
-                if is_success then
-                    notify("Card was added. Card you added was a duplicate.")
-                    unlock()
-                    fields_of_last_note = result.note.fields
-                    return
-                else
-                    notify(data, vim.log.levels.ERROR)
-                end
+    if parsed.note.noteId then
+        local note_id = tonumber(parsed.note.noteId)
+        assert(note_id)
+
+        local is_success, data
+        if vim.g["_anki_update_note"] then
+            local open_type = vim.g["_anki_update_note"].open_type
+            local query = vim.g["_anki_update_note"].query
+            local card_id = vim.g["_anki_update_note"].card_id
+
+            if open_type == "reviewer" then
+                is_success, data = api.updateNote({
+                    fields = parsed.note.fields,
+                    id = note_id,
+                    tags = parsed.note.tags,
+                })
+            elseif open_type == "browser" then
+                api.invalidateGuiBrowser()
+                is_success, data = api.updateNote({
+                    fields = parsed.note.fields,
+                    id = note_id,
+                    tags = parsed.note.tags,
+                })
+                api.guiBrowse(query)
+                api.guiSelectNote(card_id)
             else
-                notify("Card you are trying to add is a duplicate", vim.log.levels.ERROR)
+                UTIL.notify_info(
+                    "Wrong open_type. "
+                        .. open_type
+                        .. ". Something wrong with your anki addon"
+                )
+                return {}
             end
         else
-            notify(data, vim.log.levels.ERROR)
+            api.invalidateGuiBrowser()
+            is_success, data = api.updateNote({
+                fields = parsed.note.fields,
+                id = note_id,
+                tags = parsed.note.tags,
+            })
+            api.guiBrowse("nid:" .. parsed.note.noteId)
         end
+
+        if is_success then
+            UTIL.notify_info("Card was updated")
+            unlock()
+            return { successfullyUpdated = true }
+        end
+
+        UTIL.notify_info("Card was not updated")
+        UTIL.notify_error(vim.inspect(data))
+        return { successfullyUpdated = false }
     end
+
+    local is_success, data = pcall(api.addNote, parsed, false)
+
+    if is_success then
+        UTIL.notify_info("Card was added")
+        unlock()
+        fields_of_last_note = parsed.note.fields
+        return { successfullySent = true }
+    end
+
+    if string.find(data, "duplicate") then
+        if allow_duplicate then
+            -- adding again because there is no API for just checking for duplicates in AnkiConnect
+            is_success, data = pcall(api.addNote, parsed, true)
+            if is_success then
+                UTIL.notify_info("Card was added. Card you added was a duplicate.")
+                unlock()
+                fields_of_last_note = parsed.note.fields
+                return { successfullySent = true }
+            else
+                UTIL.notify_error(data)
+            end
+        else
+            UTIL.notify_error("Card you are trying to add is a duplicate")
+        end
+    else
+        UTIL.notify_error(data)
+    end
+
+    return { successfullySent = false }
 end
 
 --- Replaces the current line with the content of field whose name is nearest to the cursor
@@ -512,7 +576,7 @@ anki.fill_field_from_last_note = function()
     end
 
     if field == nil then
-        notify("Could not find a field name", vim.log.levels.ERROR)
+        UTIL.notify_error("Could not find a field name")
         return
     end
 
@@ -522,10 +586,7 @@ anki.fill_field_from_last_note = function()
             vim.split(fields_of_last_note[field], "<br>\n", { plain = true })
         vim.api.nvim_buf_set_lines(0, x, x + 1, false, replacement)
     else
-        notify(
-            "Could not find '" .. field .. "' inside the last note",
-            vim.log.levels.ERROR
-        )
+        UTIL.notify_error("Could not find '" .. field .. "' inside the last note")
     end
 end
 
@@ -557,7 +618,7 @@ local function create_commands()
     end, {})
 
     vim.api.nvim_create_user_command("AnkiShowContext", function()
-        notify("Context is set to " .. vim.inspect(vim.g.anki_context))
+        UTIL.notify_info("Context is set to " .. vim.inspect(vim.g.anki_context))
     end, {})
 
     vim.api.nvim_create_user_command("AnkiWithContext", function(opts)
@@ -565,7 +626,7 @@ local function create_commands()
             local args = opts.args
             anki.ankiWithContext(args, vim.g.anki_context)
         else
-            notify("vim.g.anki_context is not defined")
+            UTIL.notify("vim.g.anki_context is not defined")
             return
         end
     end, {
@@ -582,7 +643,7 @@ local function create_commands()
 
     vim.api.nvim_create_user_command("AnkiSetContext", function(opts)
         vim.g.anki_context = opts.args
-        notify("Set context to " .. vim.inspect(opts.args))
+        UTIL.notify("Set context to " .. vim.inspect(opts.args))
     end, {
         nargs = 1,
         complete = function()
@@ -591,7 +652,7 @@ local function create_commands()
     })
 end
 
-local function load()
+local function sanity_check()
     local api = require("anki.api")
 
     local s0, decknames = pcall(api.deckNamesAndIds)
@@ -613,25 +674,45 @@ local function load()
         if not models[m] then
             error(
                 "Note Type (model) name '"
-                .. m
-                .. "' from your config was not found in Anki"
+                    .. m
+                    .. "' from your config was not found in Anki"
             )
         end
         models_to_decknames[m] = d
         table.insert(model_names, m)
     end
+end
 
+local function load()
     vim.api.nvim_set_hl(0, "ankiHtmlItalic", { italic = true })
     vim.api.nvim_set_hl(0, "ankiHtmlBold", { bold = true })
     vim.api.nvim_set_hl(0, "ankiDeckname", { link = "Special" })
     vim.api.nvim_set_hl(0, "ankiModelname", { link = "Special" })
     vim.api.nvim_set_hl(0, "ankiTags", { link = "Special" })
+    vim.api.nvim_set_hl(0, "ankiNoteId", { link = "Special" })
     vim.api.nvim_set_hl(0, "ankiField", { link = "@module" })
+
+    vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave" }, {
+        group = AUTOCMD_GROUP,
+        pattern = "*.anki",
+        callback = function()
+            require("anki.linter").lint(
+                vim.api.nvim_buf_get_lines(0, 0, -1, false),
+                Config.linters
+            )
+        end,
+    })
+
+    vim.api.nvim_create_autocmd("BufEnter", {
+        group = AUTOCMD_GROUP,
+        pattern = "*.anki",
+        callback = create_lock,
+    })
 end
 
 local function launch()
     if not has_loaded then
-        local status, res = pcall(load)
+        local status, res = pcall(sanity_check)
         if not status then
             vim.api.nvim_create_user_command("Anki", function()
                 launch()
@@ -645,23 +726,7 @@ local function launch()
             should_delete_command = false
         end
 
-        vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave" }, {
-            group = AUTOCMD_GROUP,
-            pattern = "*.anki",
-            callback = function()
-                require("anki.linter").lint(
-                    vim.api.nvim_buf_get_lines(0, 0, -1, false),
-                    Config.linters
-                )
-            end,
-        })
-
-        vim.api.nvim_create_autocmd("BufEnter", {
-            group = AUTOCMD_GROUP,
-            pattern = "*.anki",
-            callback = create_lock,
-        })
-
+        load()
         create_commands()
         has_loaded = true
     end
@@ -688,7 +753,7 @@ anki.setup = function(user_cfg)
                 local status, res = pcall(launch)
                 if not status then
                     vim.schedule(function()
-                        notify(res, vim.log.levels.ERROR)
+                        UTIL.notify_error(vim.inspect(res))
                     end)
                 end
             end,
@@ -707,7 +772,7 @@ anki.setup = function(user_cfg)
                 local status, res = pcall(launch)
                 if not status then
                     vim.schedule(function()
-                        notify(res, vim.log.levels.ERROR)
+                        UTIL.notify_error(vim.inspect(res))
                     end)
                 end
             end,
@@ -745,12 +810,12 @@ anki.add_image_from_clipboard = function()
     local base64 = Config.base64_path
 
     if vim.fn.executable(xclip) == 0 then
-        notify("xclip not found", vim.log.levels.ERROR)
+        UTIL.notify_error("xclip not found")
         return
     end
 
     if vim.fn.executable(base64) == 0 then
-        notify("base64 not found", vim.log.levels.ERROR)
+        UTIL.notify_error("base64 not found")
         return
     end
 
@@ -760,8 +825,8 @@ anki.add_image_from_clipboard = function()
     ):wait()
 
     if targets.code ~= 0 then
-        notify("Error from xclip", vim.log.levels.ERROR)
-        notify(targets.stderr, vim.log.levels.ERROR)
+        UTIL.notify_error("Error from xclip")
+        UTIL.notify_error(targets.stderr)
         return
     end
 
@@ -804,30 +869,27 @@ anki.add_image_from_clipboard = function()
         }, { text = true }):wait()
 
         if xclip_out.code ~= 0 then
-            notify("Error from xclip", vim.log.levels.ERROR)
-            notify(xclip_out.stderr, vim.log.levels.ERROR)
+            UTIL.notify_error("Error from xclip")
+            UTIL.notify_error(xclip_out.stderr)
             return
         end
 
         local path = vim.fs.normalize(vim.trim(xclip_out.stdout))
 
         if vim.fn.filereadable(path) == 0 then
-            notify(path .. "is not file or not readable", vim.log.levels.ERROR)
+            UTIL.notify_error(path .. "is not file or not readable")
             return
         end
 
         local filename = vim.fs.basename(path)
         if not filename then
-            notify("Could not extract basename from path: " .. path, vim.log.levels.ERROR)
+            UTIL.notify_error("Could not extract basename from path: " .. path)
             return
         end
 
         local ft = filename:match(".(%a+)$")
         if not ft then
-            notify(
-                "Could not extract filetype from filename: " .. filename,
-                vim.log.levels.ERROR
-            )
+            UTIL.notify_error("Could not extract filetype from filename: " .. filename)
             return
         end
 
@@ -847,10 +909,10 @@ anki.add_image_from_clipboard = function()
                 index[2],
                 { string.format([[<img src=%s>]], data) }
             )
-            notify("Added image from " .. path)
+            UTIL.notify("Added image from " .. path)
             return
         else
-            notify(data, vim.log.levels.ERROR)
+            UTIL.notify_error(data)
             return
         end
     elseif Target.is_image(target) then
@@ -866,8 +928,8 @@ anki.add_image_from_clipboard = function()
         }):wait()
 
         if xclip_out.code ~= 0 then
-            notify("Error from xclip", vim.log.levels.ERROR)
-            notify(xclip_out.stderr, vim.log.levels.ERROR)
+            UTIL.notify_error("Error from xclip")
+            UTIL.notify_error(xclip_out.stderr)
             return
         end
 
@@ -876,7 +938,7 @@ anki.add_image_from_clipboard = function()
         if #xclip_out.stdout > 10000 then
             local tempfile = vim.fn.tempname()
             if vim.fn.writefile(xclip_out.stdout, tempfile) ~= 0 then
-                notify("Could not write to tempfile", vim.log.levels.ERROR)
+                UTIL.notify_error("Could not write to tempfile")
                 return
             end
             status, data = pcall(require("anki.api").storeMediaFile, {
@@ -888,8 +950,8 @@ anki.add_image_from_clipboard = function()
         else
             local base64_out = vim.system({ base64 }, { stdin = xclip_out.stdout }):wait()
             if base64_out.code ~= 0 then
-                notify("Error from base64", vim.log.levels.ERROR)
-                notify(base64_out.stderr, vim.log.levels.ERROR)
+                UTIL.notify_error("Error from base64")
+                UTIL.notify_error(base64_out.stderr)
                 return
             end
             status, data = pcall(require("anki.api").storeMediaFile, {
@@ -909,10 +971,10 @@ anki.add_image_from_clipboard = function()
                 index[2],
                 { string.format([[<img src=%s>]], data) }
             )
-            notify("Added image from clipboard")
+            UTIL.notify("Added image from clipboard")
             return
         else
-            notify(data, vim.log.levels.ERROR)
+            UTIL.notify_error(data)
             return
         end
     end
@@ -926,5 +988,66 @@ anki.is_locked = function()
     return is_locked()
 end
 
----@mod anki
+---@private
+---@param noteId number
+local function open_note(noteId)
+    local API = require("anki.api")
+    local BUFFER = require("anki.buffer")
+
+    local has_found_note, notes = API.notesInfo({ notes = { noteId } })
+
+    if not has_found_note then
+        UTIL.notify_error("notesInfo did not succeed with " .. notes)
+        return
+    end
+
+    if #notes > 2 then
+        UTIL.notify_error("notesInfo returned more than one note for noteId:" .. noteId)
+        return
+    end
+
+    local note_from_anki = notes[1]
+
+    --TODO: is there a better way of doing this?
+    if vim.inspect(note_from_anki) == "vim.empty_dict()" then
+        UTIL.notify_error("notesInfo did not find a note with noteId:" .. noteId)
+        return
+    end
+
+    local temp_file = vim.fn.tempname()
+    vim.cmd.edit(temp_file)
+
+    if Config.tex_support then
+        vim.bo.filetype = "tex.anki"
+    else
+        vim.bo.filetype = "anki"
+    end
+
+    local note = BUFFER.parse_form_from_anki(note_from_anki)
+    local anki_table = require("anki.buffer").create(
+        note.fields_names,
+        nil,
+        note.modelname,
+        { tags = note.tags, fields = note.fields_values },
+        true,
+        noteId
+    )
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, anki_table.form)
+    vim.bo.modified = false -- don't want to count filling the buffer with the form as modifing it
+    if Config.move_cursor_after_creation then
+        vim.api.nvim_win_set_cursor(0, { anki_table.pos_first_field, 0 })
+    end
+end
+
+---@private
+anki._open_note = function(note_id, card_id, open_type, query)
+    note_id = tonumber(note_id)
+    assert(note_id)
+    card_id = tonumber(card_id)
+    assert(card_id)
+    vim.g["_anki_update_note"] =
+        { card_id = card_id, open_type = open_type, query = query }
+    open_note(note_id)
+end
+
 return anki
